@@ -35,9 +35,3 @@ jobs:
         with:
           name: Build Artifacts
           path: VolumeKeyMusicManagerModule-release.apk
-      - name: Publish APK
-        uses: marvinpinto/action-automatic-releases@latest
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          files: VolumeKeyMusicManagerModule-release.apk
-          automatic_release_tag: "latest"
