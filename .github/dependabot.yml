@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    labels: []
+    directory: /
+    target-branch: main
+    schedule:
+      interval: daily
+
+  - package-ecosystem: gradle
+    labels: []
+    directory: /
+    target-branch: main
+    schedule:
+      interval: daily
