@@ -156,7 +156,7 @@ class VolumeManagerModule : IXposedHookLoadPackage {
             mAudioManager = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager?
                 ?: throw NullPointerException("Unable to obtain audio service")
             mPowerManager = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager?
-                ?: throw NullPointerException("Unable to power service")
+                ?: throw NullPointerException("Unable to obtain power service")
         }
 
         private val isMusicActive: Boolean
@@ -178,9 +178,9 @@ class VolumeManagerModule : IXposedHookLoadPackage {
             }
 
         private fun sendMediaButtonEvent(code: Int) {
-            val eventtime = SystemClock.uptimeMillis()
+            val eventTime = SystemClock.uptimeMillis()
             val keyIntent = Intent(Intent.ACTION_MEDIA_BUTTON, null)
-            var keyEvent: KeyEvent? = KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN, code, 0)
+            var keyEvent = KeyEvent(eventTime, eventTime, KeyEvent.ACTION_DOWN, code, 0)
             keyIntent.putExtra(Intent.EXTRA_KEY_EVENT, keyEvent)
             dispatchMediaButtonEvent(keyEvent)
             keyEvent = KeyEvent.changeAction(keyEvent, KeyEvent.ACTION_UP)
@@ -188,7 +188,7 @@ class VolumeManagerModule : IXposedHookLoadPackage {
             dispatchMediaButtonEvent(keyEvent)
         }
 
-        private fun dispatchMediaButtonEvent(keyEvent: KeyEvent?) {
+        private fun dispatchMediaButtonEvent(keyEvent: KeyEvent) {
             try {
                 mAudioManager.dispatchMediaKeyEvent(keyEvent)
             } catch (t: Throwable) {
