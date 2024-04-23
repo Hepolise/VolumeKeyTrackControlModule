@@ -34,7 +34,7 @@ android {
 
 dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.22"))
-    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.core:core-ktx:1.13.0'
 
     // Xposed Framework API dependencies
     compileOnly 'de.robv.android.xposed:api:82'
