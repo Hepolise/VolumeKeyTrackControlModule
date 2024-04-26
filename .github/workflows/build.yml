@@ -2,11 +2,26 @@ name: Build Release App Bundle
 
 on: 
   workflow_dispatch:
+     inputs:
+      build-type:
+        type: choice
+        description: Build Type
+        options:
+        - debug
+        - release
   workflow_call:
+     inputs:
+      build-type:
+        required: false
+        type: string
   push:
     branches:
       - main
       - dev
+
+env:
+  BUILD_TYPE: ${{ inputs.build-type || 'debug' }}
+  APK_DIR: app/build/outputs/apk
 
 jobs:
   build:
@@ -18,25 +33,37 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - name: Set environment variables
+        run: |
+          if [[ "${{ env.BUILD_TYPE }}" == 'debug' ]]; then
+              echo "ASSEMBLE_TYPE=assembleDebug" >> "$GITHUB_ENV"
+          else
+              echo "ASSEMBLE_TYPE=assembleRelease" >> "$GITHUB_ENV"
+          fi
+      - name: Print env variables
+        run: |
+          echo 'BUILD_TYPE: ${{env.BUILD_TYPE}}'
+          echo 'ASSEMBLE_TYPE: ${{env.ASSEMBLE_TYPE}}'
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       - name: Build APK
-        run: ./gradlew app:assembleRelease
+        run: ./gradlew app:${{ env.ASSEMBLE_TYPE }}
+      - name: Rename release apk
+        if: ${{ env.BUILD_TYPE == 'release' }}
+        run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-release-unsigned.apk ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}.apk
       - name: Sign app APK
         uses: kevin-david/zipalign-sign-android-release@main
         id: sign_app
         with:
-          releaseDirectory: app/build/outputs/apk/release
+          releaseDirectory: ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}
           signingKeyBase64: ${{ secrets.KEYSTORE }}
           alias: ${{ secrets.KEY_ALIAS }}
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
-        #env:
-        #  BUILD_TOOLS_VERSION: "34.0.0"
       - name: Rename
-        run: mv app/build/outputs/apk/release/app-release-unsigned-signed.apk VolumeKeyMusicManagerModule-release.apk
+        run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}-signed.apk VolumeKeyMusicManagerModule-${{ env.BUILD_TYPE }}.apk
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: Build Artifacts
-          path: VolumeKeyMusicManagerModule-release.apk
+          path: VolumeKeyMusicManagerModule-${{ env.BUILD_TYPE }}.apk
