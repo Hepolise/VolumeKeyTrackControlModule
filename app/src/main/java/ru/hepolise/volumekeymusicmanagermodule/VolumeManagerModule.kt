@@ -57,7 +57,6 @@ class VolumeManagerModule : IXposedHookLoadPackage {
         private const val CLASS_IWINDOW_MANAGER = "android.view.IWindowManager"
         private const val CLASS_WINDOW_MANAGER_FUNCS =
             "com.android.server.policy.WindowManagerPolicy.WindowManagerFuncs"
-        private const val DEBUG = true
         private var mIsLongPress = false
         private var mIsDownPressed = false
         private var mIsUpPressed = false
@@ -66,7 +65,7 @@ class VolumeManagerModule : IXposedHookLoadPackage {
         private lateinit var mAudioManager: AudioManager
         private lateinit var mPowerManager: PowerManager
         private fun log(text: String) {
-            if (DEBUG) XposedBridge.log(text)
+            if (BuildConfig.DEBUG) XposedBridge.log(text)
         }
 
         private val handleInterceptKeyBeforeQueueing: XC_MethodHook = object : XC_MethodHook() {

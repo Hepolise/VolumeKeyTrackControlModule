@@ -14,8 +14,6 @@ android {
         versionName = rootProject.ext["appVersionName"].toString()
     }
 
-    
-
     buildTypes {
         release {
             minifyEnabled true
