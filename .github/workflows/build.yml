@@ -33,8 +33,13 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      - name: Generate version
+        run: ./gradlew getVersion
       - name: Set environment variables
         run: |
+          echo "VERSION=$(cat app/build/version.txt)" >> $GITHUB_ENV
           if [[ "${{ env.BUILD_TYPE }}" == 'debug' ]]; then
               echo "ASSEMBLE_TYPE=assembleDebug" >> "$GITHUB_ENV"
           else
@@ -42,10 +47,9 @@ jobs:
           fi
       - name: Print env variables
         run: |
-          echo 'BUILD_TYPE: ${{env.BUILD_TYPE}}'
-          echo 'ASSEMBLE_TYPE: ${{env.ASSEMBLE_TYPE}}'
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+          echo 'BUILD_TYPE: ${{ env.BUILD_TYPE }}'
+          echo 'ASSEMBLE_TYPE: ${{ env.ASSEMBLE_TYPE }}'
+          echo 'VERSION: ${{ env.VERSION }}'
       - name: Build APK
         run: ./gradlew app:${{ env.ASSEMBLE_TYPE }}
       - name: Rename release apk
@@ -61,9 +65,9 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
       - name: Rename
-        run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}-signed.apk VolumeKeyMusicManagerModule-${{ env.BUILD_TYPE }}.apk
+        run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}-signed.apk VolumeKeyMusicManagerModule-${{ env.BUILD_TYPE }}-${{ env.VERSION }}.apk
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: Build Artifacts
-          path: VolumeKeyMusicManagerModule-${{ env.BUILD_TYPE }}.apk
+          path: VolumeKeyMusicManagerModule-${{ env.BUILD_TYPE }}-${{ env.VERSION }}.apk
