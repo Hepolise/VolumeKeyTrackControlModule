@@ -4,3 +4,20 @@ plugins {
     id 'com.android.library' version '8.3.2' apply false
     id 'org.jetbrains.kotlin.android' version '1.9.23' apply false
 }
+
+String versionName = "1.14.1"
+Integer versionCode = 4
+
+rootProject.ext.set("appVersionName", versionName)
+rootProject.ext.set("appVersionCode", versionCode)
+
+tasks.register("getVersion") {
+    doLast {
+        File versionFile = new File("app/build/version.txt")
+        versionFile.parentFile.mkdirs()
+        if (!versionFile.exists()) {
+            versionFile.createNewFile()
+        }
+        versionFile.setText(versionName)
+    }
+}

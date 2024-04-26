@@ -10,8 +10,8 @@ android {
         applicationId "ru.hepolise.volumekeymusicmanagermodule"
         minSdk 25
         targetSdk 34
-        versionCode 3
-        versionName "1.14.0"
+        versionCode = Integer.parseInt(rootProject.ext["appVersionCode"].toString())
+        versionName = rootProject.ext["appVersionName"].toString()
     }
 
     
