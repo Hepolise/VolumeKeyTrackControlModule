@@ -73,7 +73,7 @@ class VolumeManagerModule : IXposedHookLoadPackage {
                 val event = param.args[0] as KeyEvent
                 val keyCode = event.keyCode
                 initManagers(XposedHelpers.getObjectField(param.thisObject, "mContext") as Context)
-                if (checkNeedRun(keyCode, event)) {
+                if (needHook(keyCode, event)) {
                     if (event.action == KeyEvent.ACTION_DOWN) {
                         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) mIsDownPressed = true
                         if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) mIsUpPressed = true
@@ -148,7 +148,7 @@ class VolumeManagerModule : IXposedHookLoadPackage {
             }
         }
 
-        private fun checkNeedRun(keyCode: Int, event: KeyEvent): Boolean {
+        private fun needHook(keyCode: Int, event: KeyEvent): Boolean {
             log("current audio manager mode: ${mAudioManager.mode}")
             return (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
                     && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
