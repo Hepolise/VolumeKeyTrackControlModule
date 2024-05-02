@@ -153,7 +153,7 @@ class VolumeManagerModule : IXposedHookLoadPackage {
             return (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
                     && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
                     && (!mPowerManager.isInteractive || mIsDownPressed || mIsUpPressed)
-                    && mAudioManager.mode != AudioManager.MODE_IN_CALL
+                    && mAudioManager.mode == AudioManager.MODE_NORMAL
         }
 
         private fun initManagers(ctx: Context) {
