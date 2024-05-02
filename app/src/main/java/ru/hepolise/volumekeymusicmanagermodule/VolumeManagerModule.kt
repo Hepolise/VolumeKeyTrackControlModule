@@ -149,6 +149,7 @@ class VolumeManagerModule : IXposedHookLoadPackage {
         }
 
         private fun checkNeedRun(keyCode: Int, event: KeyEvent): Boolean {
+            log("current audio manager mode: ${mAudioManager.mode}")
             return (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
                     && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
                     && (!mPowerManager.isInteractive || mIsDownPressed || mIsUpPressed)
