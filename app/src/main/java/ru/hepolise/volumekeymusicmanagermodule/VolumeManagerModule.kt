@@ -155,6 +155,10 @@ class VolumeManagerModule : IXposedHookLoadPackage {
             log("!mPowerManager.isInteractive: ${!mPowerManager.isInteractive}, required: true")
             log("mIsDownPressed: ${mIsDownPressed}")
             log("mIsUpPressed: ${mIsUpPressed}")
+            log("needHook: ${(keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
+                    && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
+                    && (!mPowerManager.isInteractive || mIsDownPressed || mIsUpPressed)
+                    && mAudioManager.mode == AudioManager.MODE_NORMAL}")
             return (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
                     && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
                     && (!mPowerManager.isInteractive || mIsDownPressed || mIsUpPressed)
