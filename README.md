@@ -1,5 +1,8 @@
 # Volume Key Music Manager Module
 
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/Hepolise/VolumeKeyMusicManagerModule/build.yml)
+![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)
+
 An Xposed module that allows to skip and play/pause track with volume keys. Inspired by [Gravity Box](https://github.com/GravityBox/GravityBox).
 
 ## Usage 
@@ -18,4 +21,4 @@ Android 11+ (may be working on lower versions, you can try and install it even o
 
 * OnePlus 10 Pro (Android 13 & 14)
 
-[Open an issue](https://github.com/Hepolise/VolumeKeyMusicManagerModule/issues/new) if you are experiencing some issues on your device
+[Open an issue](https://github.com/Hepolise/VolumeKeyMusicManagerModule/issues/new) if you are experiencing some troubles on your device
