@@ -149,7 +149,16 @@ class VolumeManagerModule : IXposedHookLoadPackage {
         }
 
         private fun needHook(keyCode: Int, event: KeyEvent): Boolean {
-            log("current audio manager mode: ${mAudioManager.mode}")
+            log("========")
+            log("current audio manager mode: ${mAudioManager.mode}, required: ${AudioManager.MODE_NORMAL}")
+            log("keyCode: ${keyCode}, required: ${KeyEvent.KEYCODE_VOLUME_DOWN} or ${KeyEvent.KEYCODE_VOLUME_UP}")
+            log("!mPowerManager.isInteractive: ${!mPowerManager.isInteractive}, required: true")
+            log("mIsDownPressed: ${mIsDownPressed}")
+            log("mIsUpPressed: ${mIsUpPressed}")
+            log("needHook: ${(keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
+                    && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
+                    && (!mPowerManager.isInteractive || mIsDownPressed || mIsUpPressed)
+                    && mAudioManager.mode == AudioManager.MODE_NORMAL}")
             return (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
                     && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
                     && (!mPowerManager.isInteractive || mIsDownPressed || mIsUpPressed)
