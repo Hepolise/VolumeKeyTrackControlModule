@@ -27,7 +27,7 @@ android {
     kotlinOptions {
         jvmTarget = '17'
     }
-    namespace 'ru.hepolise.volumekeymusicmanagermodule'
+    namespace 'ru.hepolise.volumekeytrackcontrolmodule'
 }
 
 dependencies {
