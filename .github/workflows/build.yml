@@ -22,6 +22,7 @@ on:
 env:
   BUILD_TYPE: ${{ inputs.build-type || 'debug' }}
   APK_DIR: app/build/outputs/apk
+  APK_NAME: VolumeKeyTrackControlModule
 
 jobs:
   build:
@@ -65,9 +66,9 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
       - name: Rename
-        run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}-signed.apk VolumeKeyMusicManagerModule-${{ env.BUILD_TYPE }}-${{ env.VERSION }}.apk
+        run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}-signed.apk ${{ env.APK_NAME }}-${{ env.BUILD_TYPE }}-${{ env.VERSION }}.apk
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: Build Artifacts
-          path: VolumeKeyMusicManagerModule-${{ env.BUILD_TYPE }}-${{ env.VERSION }}.apk
+          path: ${{ env.APK_NAME }}-${{ env.BUILD_TYPE }}-${{ env.VERSION }}.apk
