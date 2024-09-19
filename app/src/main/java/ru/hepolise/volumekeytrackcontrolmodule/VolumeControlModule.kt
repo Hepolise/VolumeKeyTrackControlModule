@@ -58,12 +58,12 @@ class VolumeControlModule : IXposedHookLoadPackage {
                 log("Using Android 14 method signature")
             } catch (e2: NoSuchMethodError) {
                 // Fallback to the Android 13 method signature
-                log("Using Android 13 method signature")
                 XposedHelpers.findAndHookMethod(
                     CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
                     Context::class.java, CLASS_IWINDOW_MANAGER, CLASS_WINDOW_MANAGER_FUNCS,
                     handleConstructPhoneWindowManager
                 )
+                log("Using Android 13 method signature")
             }
         }
 
