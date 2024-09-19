@@ -20,6 +20,9 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 class VolumeControlModule : IXposedHookLoadPackage {
     @Throws(Throwable::class)
     override fun handleLoadPackage(lpparam: LoadPackageParam) {
+        if (lpparam.packageName != "android") {
+            return
+        }
         init(lpparam.classLoader)
     }
 
