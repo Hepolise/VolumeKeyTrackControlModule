@@ -11,6 +11,9 @@ dependencyResolutionManagement {
         google()
         jcenter()
         mavenCentral()
+        maven {
+            url "https://api.xposed.info/"
+        }
     }
 }
 rootProject.name = "VolumeKeyMusicManagerModule"

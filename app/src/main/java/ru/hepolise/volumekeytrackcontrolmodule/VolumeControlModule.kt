@@ -1,4 +1,4 @@
-package ru.hepolise.volumekeymusicmanagermodule
+package ru.hepolise.volumekeytrackcontrolmodule
 
 import android.content.Context
 import android.content.Intent
@@ -18,7 +18,7 @@ import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 
 @Keep
-class VolumeManagerModule : IXposedHookLoadPackage {
+class VolumeControlModule : IXposedHookLoadPackage {
     @Throws(Throwable::class)
     override fun handleLoadPackage(lpparam: LoadPackageParam) {
         init(lpparam.classLoader)
