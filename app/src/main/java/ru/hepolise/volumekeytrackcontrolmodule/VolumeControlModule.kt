@@ -37,6 +37,7 @@ class VolumeControlModule : IXposedHookLoadPackage {
                 Context::class.java, CLASS_WINDOW_MANAGER_FUNCS, CLASS_IWINDOW_MANAGER,
                 handleConstructPhoneWindowManager
             )
+            log("Using HyperOS-specific method signature")
         } catch (e1: NoSuchMethodError) {
             try {
                 // Try the Android 14 (Upside Down Cake) method signature
@@ -54,8 +55,10 @@ class VolumeControlModule : IXposedHookLoadPackage {
                     CLASS_WINDOW_MANAGER_FUNCS,
                     handleConstructPhoneWindowManager
                 )
+                log("Using Android 14 method signature")
             } catch (e2: NoSuchMethodError) {
                 // Fallback to the Android 13 method signature
+                log("Using Android 13 method signature")
                 XposedHelpers.findAndHookMethod(
                     CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
                     Context::class.java, CLASS_IWINDOW_MANAGER, CLASS_WINDOW_MANAGER_FUNCS,
