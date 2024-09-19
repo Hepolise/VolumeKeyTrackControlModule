@@ -25,13 +25,7 @@ class VolumeControlModule : IXposedHookLoadPackage {
 
     private fun init(classLoader: ClassLoader) {
         try {
-            // Try to find the HyperOS-specific method signature first
-            XposedHelpers.findMethodExact(
-                CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
-                Context::class.java, CLASS_WINDOW_MANAGER_FUNCS, CLASS_IWINDOW_MANAGER
-            )
-
-            // If the method exists, it's the HyperOS-specific implementation
+            // Try the HyperOS-specific signature
             XposedHelpers.findAndHookMethod(
                 CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
                 Context::class.java, CLASS_WINDOW_MANAGER_FUNCS, CLASS_IWINDOW_MANAGER,
@@ -40,24 +34,17 @@ class VolumeControlModule : IXposedHookLoadPackage {
             log("Using HyperOS-specific method signature")
         } catch (e1: NoSuchMethodError) {
             try {
-                // Try the Android 14 (Upside Down Cake) method signature
-                XposedHelpers.findMethodExact(
-                    CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
-                    Context::class.java, CLASS_WINDOW_MANAGER_FUNCS
-                )
-
-                // If this method exists, it's the Android 14 implementation
+                // Try the Android 14 (Upside Down Cake) signature
+                // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#2033
                 XposedHelpers.findAndHookMethod(
-                    CLASS_PHONE_WINDOW_MANAGER,
-                    classLoader,
-                    "init",
-                    Context::class.java,
-                    CLASS_WINDOW_MANAGER_FUNCS,
+                    CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
+                    Context::class.java, CLASS_WINDOW_MANAGER_FUNCS,
                     handleConstructPhoneWindowManager
                 )
                 log("Using Android 14 method signature")
             } catch (e2: NoSuchMethodError) {
-                // Fallback to the Android 13 method signature
+                // Fallback to the Android 13 signature
+                // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android13-dev/services/core/java/com/android/server/policy/PhoneWindowManager.java#1873
                 XposedHelpers.findAndHookMethod(
                     CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
                     Context::class.java, CLASS_IWINDOW_MANAGER, CLASS_WINDOW_MANAGER_FUNCS,
