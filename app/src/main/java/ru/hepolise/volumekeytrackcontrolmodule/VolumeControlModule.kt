@@ -1,11 +1,16 @@
 package ru.hepolise.volumekeytrackcontrolmodule
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
+import android.os.Build
 import android.os.Handler
 import android.os.PowerManager
 import android.os.SystemClock
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import android.view.KeyEvent
 import android.view.ViewConfiguration
@@ -81,6 +86,7 @@ class VolumeControlModule : IXposedHookLoadPackage {
         //    private static int mButtonsPressed = 0;
         private lateinit var mAudioManager: AudioManager
         private lateinit var mPowerManager: PowerManager
+        private lateinit var mVibrator: Vibrator
         private fun log(text: String) {
             if (BuildConfig.DEBUG) XposedBridge.log(text)
         }
@@ -172,10 +178,14 @@ class VolumeControlModule : IXposedHookLoadPackage {
             log("!mPowerManager.isInteractive: ${!mPowerManager.isInteractive}, required: true")
             log("mIsDownPressed: ${mIsDownPressed}")
             log("mIsUpPressed: ${mIsUpPressed}")
-            log("needHook: ${(keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
-                    && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
-                    && (!mPowerManager.isInteractive || mIsDownPressed || mIsUpPressed)
-                    && mAudioManager.mode == AudioManager.MODE_NORMAL}")
+            log(
+                "needHook: ${
+                    (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
+                            && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
+                            && (!mPowerManager.isInteractive || mIsDownPressed || mIsUpPressed)
+                            && mAudioManager.mode == AudioManager.MODE_NORMAL
+                }"
+            )
             return (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
                     && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
                     && (!mPowerManager.isInteractive || mIsDownPressed || mIsUpPressed)
@@ -183,10 +193,20 @@ class VolumeControlModule : IXposedHookLoadPackage {
         }
 
         private fun initManagers(ctx: Context) {
-            mAudioManager = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager?
-                ?: throw NullPointerException("Unable to obtain audio service")
-            mPowerManager = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager?
-                ?: throw NullPointerException("Unable to obtain power service")
+            with(ctx) {
+                mAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager?
+                    ?: throw NullPointerException("Unable to obtain audio service")
+                mPowerManager = getSystemService(Context.POWER_SERVICE) as PowerManager?
+                    ?: throw NullPointerException("Unable to obtain power service")
+                mVibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val vibratorManager =
+                        getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                    vibratorManager.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                }
+            }
         }
 
         private val isMusicActive: Boolean
@@ -207,6 +227,7 @@ class VolumeControlModule : IXposedHookLoadPackage {
                 return false
             }
 
+        @SuppressLint("MissingPermission")
         private fun sendMediaButtonEvent(code: Int) {
             val eventTime = SystemClock.uptimeMillis()
             val keyIntent = Intent(Intent.ACTION_MEDIA_BUTTON, null)
@@ -216,6 +237,22 @@ class VolumeControlModule : IXposedHookLoadPackage {
             keyEvent = KeyEvent.changeAction(keyEvent, KeyEvent.ACTION_UP)
             keyIntent.putExtra(Intent.EXTRA_KEY_EVENT, keyEvent)
             dispatchMediaButtonEvent(keyEvent)
+            triggerVibration()
+        }
+
+        @SuppressLint("MissingPermission")
+        private fun triggerVibration() {
+            val millis = 50L
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                mVibrator.vibrate(
+                    VibrationEffect.createOneShot(
+                        millis,
+                        VibrationEffect.DEFAULT_AMPLITUDE
+                    )
+                )
+            } else {
+                mVibrator.vibrate(millis) // Deprecated in API 26 but still works for lower versions
+            }
         }
 
         private fun dispatchMediaButtonEvent(keyEvent: KeyEvent) {
