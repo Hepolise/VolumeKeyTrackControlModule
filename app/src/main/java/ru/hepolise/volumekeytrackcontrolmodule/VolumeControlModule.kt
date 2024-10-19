@@ -227,7 +227,6 @@ class VolumeControlModule : IXposedHookLoadPackage {
                 return false
             }
 
-        @SuppressLint("MissingPermission")
         private fun sendMediaButtonEvent(code: Int) {
             val eventTime = SystemClock.uptimeMillis()
             val keyIntent = Intent(Intent.ACTION_MEDIA_BUTTON, null)
