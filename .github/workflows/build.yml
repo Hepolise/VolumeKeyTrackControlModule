@@ -18,6 +18,7 @@ on:
     branches:
       - main
       - dev
+      - test
 
 env:
   BUILD_TYPE: ${{ inputs.build-type || 'debug' }}
