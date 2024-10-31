@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "ru.hepolise.volumekeymusicmanagermodule"
         minSdk 25
-        targetSdk 34
+        targetSdk 35
         versionCode = Integer.parseInt(rootProject.ext["appVersionCode"].toString())
         versionName = rootProject.ext["appVersionName"].toString()
     }
