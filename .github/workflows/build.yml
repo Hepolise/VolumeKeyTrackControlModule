@@ -22,8 +22,8 @@ on:
   pull_request:
     branches:
       - main
-      - test
       - dev
+      - test
 
 env:
   BUILD_TYPE: ${{ inputs.build-type || 'debug' }}
