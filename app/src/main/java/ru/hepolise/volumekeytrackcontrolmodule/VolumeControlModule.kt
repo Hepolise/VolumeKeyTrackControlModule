@@ -42,8 +42,9 @@ class VolumeControlModule : IXposedHookLoadPackage {
             log("Using HyperOS-specific method signature")
         } catch (e1: NoSuchMethodError) {
             try {
-                // Try the Android 14 (Upside Down Cake) signature
+                // Try the Android 14 & 15 signature
                 // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#2033
+                // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android15-release/services/core/java/com/android/server/policy/PhoneWindowManager.java#2199
                 XposedHelpers.findAndHookMethod(
                     CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
                     Context::class.java, CLASS_WINDOW_MANAGER_FUNCS,
@@ -242,7 +243,14 @@ class VolumeControlModule : IXposedHookLoadPackage {
         @SuppressLint("MissingPermission")
         private fun triggerVibration() {
             val millis = 50L
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                mVibrator.vibrate(
+                    VibrationEffect.createPredefined(
+                        VibrationEffect.EFFECT_CLICK
+                    )
+                )
+            }
+            else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 mVibrator.vibrate(
                     VibrationEffect.createOneShot(
                         millis,
