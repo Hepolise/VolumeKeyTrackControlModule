@@ -243,7 +243,14 @@ class VolumeControlModule : IXposedHookLoadPackage {
         @SuppressLint("MissingPermission")
         private fun triggerVibration() {
             val millis = 50L
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                mVibrator.vibrate(
+                    VibrationEffect.createPredefined(
+                        VibrationEffect.EFFECT_CLICK
+                    )
+                )
+            }
+            else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 mVibrator.vibrate(
                     VibrationEffect.createOneShot(
                         millis,
