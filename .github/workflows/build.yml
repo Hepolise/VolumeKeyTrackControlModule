@@ -19,6 +19,11 @@ on:
       - main
       - dev
       - test
+  pull_request:
+    branches:
+      - main
+      - test
+      - dev
 
 env:
   BUILD_TYPE: ${{ inputs.build-type || 'debug' }}
