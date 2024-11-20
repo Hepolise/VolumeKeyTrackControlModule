@@ -6,8 +6,8 @@ import androidx.annotation.Keep
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
-import ru.hepolise.volumekeytrackcontrolmodule.VolumeKeyHandlers.handleConstructPhoneWindowManager
-import ru.hepolise.volumekeytrackcontrolmodule.VolumeKeyHandlers.handleInterceptKeyBeforeQueueing
+import ru.hepolise.volumekeytrackcontrolmodule.VolumeKeyControlModuleHandlers.handleConstructPhoneWindowManager
+import ru.hepolise.volumekeytrackcontrolmodule.VolumeKeyControlModuleHandlers.handleInterceptKeyBeforeQueueing
 import java.io.Serializable
 
 @Keep

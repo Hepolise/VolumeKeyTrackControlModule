@@ -16,7 +16,7 @@ import de.robv.android.xposed.XposedHelpers
 import ru.hepolise.volumekeytrackcontrolmodule.extension.AudioManagerExtension.sendMediaButtonEvent
 import ru.hepolise.volumekeytrackcontrolmodule.extension.VibratorExtension.triggerVibration
 
-object VolumeKeyHandlers {
+object VolumeKeyControlModuleHandlers {
 
     private const val VOLUME_UP_LONG_PRESS = "mVolumeUpLongPress"
     private const val VOLUME_DOWN_LONG_PRESS = "mVolumeDownLongPress"
