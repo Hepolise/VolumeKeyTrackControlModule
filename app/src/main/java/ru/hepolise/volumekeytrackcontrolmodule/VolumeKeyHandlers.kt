@@ -13,7 +13,6 @@ import android.view.ViewConfiguration
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
-import ru.hepolise.volumekeytrackcontrolmodule.LogHelper.log
 import ru.hepolise.volumekeytrackcontrolmodule.extension.AudioManagerExtension.sendMediaButtonEvent
 import ru.hepolise.volumekeytrackcontrolmodule.extension.VibratorExtension.triggerVibration
 
@@ -32,6 +31,8 @@ object VolumeKeyHandlers {
     private lateinit var audioManager: AudioManager
     private lateinit var powerManager: PowerManager
     private lateinit var vibrator: Vibrator
+
+    private fun log(text: String) = LogHelper.log(VolumeControlModule::class.java.simpleName, text)
 
     val handleInterceptKeyBeforeQueueing: XC_MethodHook = object : XC_MethodHook() {
         override fun beforeHookedMethod(param: MethodHookParam) {
