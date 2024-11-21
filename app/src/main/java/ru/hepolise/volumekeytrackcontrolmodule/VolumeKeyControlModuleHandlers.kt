@@ -25,6 +25,10 @@ object VolumeKeyControlModuleHandlers {
     private const val VOLUME_DOWN_LONG_PRESS = "mVolumeDownLongPress"
     private const val VOLUME_BOTH_LONG_PRESS = "mVolumeBothLongPress"
 
+    private const val CLASS_MEDIA_SESSION_LEGACY_HELPER =
+        "android.media.session.MediaSessionLegacyHelper"
+    private const val CLASS_COMPONENT_NAME = "android.content.ComponentName"
+
     private val TIMEOUT = ViewConfiguration.getLongPressTimeout().toLong()
 
     private var isLongPress = false
@@ -133,27 +137,24 @@ object VolumeKeyControlModuleHandlers {
                 @Suppress("DEPRECATION")
                 getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             }
-
-            val mediaSessionHelperClass = XposedHelpers.findClass(
-                "android.media.session.MediaSessionLegacyHelper",
-                param.thisObject.javaClass.classLoader
-            )
-            val helper =
-                XposedHelpers.callStaticMethod(mediaSessionHelperClass, "getHelper", context)
-            val mSessionManager = XposedHelpers.getObjectField(helper, "mSessionManager")
-            val comName = XposedHelpers.findClass(
-                "android.content.ComponentName",
-                param.thisObject.javaClass.classLoader
-            )
-
-            @Suppress("UNCHECKED_CAST")
-            mediaControllers = XposedHelpers.callMethod(
-                mSessionManager,
-                "getActiveSessions",
-                arrayOf(comName),
-                null
-            ) as List<MediaController>?
         }
+
+        val mediaSessionHelperClass = XposedHelpers.findClass(
+            CLASS_MEDIA_SESSION_LEGACY_HELPER,
+            param.thisObject.javaClass.classLoader
+        )
+        val helper = XposedHelpers.callStaticMethod(mediaSessionHelperClass, "getHelper", context)
+        val mSessionManager = XposedHelpers.getObjectField(helper, "mSessionManager")
+        val componentNameClass =
+            XposedHelpers.findClass(CLASS_COMPONENT_NAME, param.thisObject.javaClass.classLoader)
+
+        @Suppress("UNCHECKED_CAST")
+        mediaControllers = XposedHelpers.callMethod(
+            mSessionManager,
+            "getActiveSessions",
+            arrayOf(componentNameClass),
+            null
+        ) as List<MediaController>?
     }
 
     private fun doHook(keyCode: Int, event: KeyEvent, param: MethodHookParam) {
