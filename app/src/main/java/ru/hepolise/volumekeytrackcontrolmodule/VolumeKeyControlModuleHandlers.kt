@@ -207,7 +207,7 @@ object VolumeKeyControlModuleHandlers {
     private fun hasActiveMediaController() = getActiveMediaController() != null
 
     private fun getActiveMediaController(): MediaController? {
-        return mediaControllers?.first()?.also { log("chosen media controller: ${it.packageName}") }
+        return mediaControllers?.firstOrNull()?.also { log("chosen media controller: ${it.packageName}") }
     }
 
     private fun isMusicActive() =
