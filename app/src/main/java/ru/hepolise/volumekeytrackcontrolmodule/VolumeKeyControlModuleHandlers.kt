@@ -108,7 +108,7 @@ object VolumeKeyControlModuleHandlers {
         if (!powerManager.isInteractive) {
             return false
         }
-        log("displays count: $${displayManager.displays.size}")
+        log("displays count: ${displayManager.displays.size}")
         // TODO
         if (displayManager.displays.size > 1) {
             return true
