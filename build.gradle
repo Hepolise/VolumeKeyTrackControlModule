@@ -5,8 +5,8 @@ plugins {
     id 'org.jetbrains.kotlin.android' version '2.0.21' apply false
 }
 
-String versionName = "1.15.0"
-Integer versionCode = 7
+String versionName = "1.15.1"
+Integer versionCode = 8
 
 rootProject.ext.set("appVersionName", versionName)
 rootProject.ext.set("appVersionCode", versionCode)
