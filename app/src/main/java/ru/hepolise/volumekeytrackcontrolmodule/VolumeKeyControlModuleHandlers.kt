@@ -210,9 +210,15 @@ object VolumeKeyControlModuleHandlers {
         return mediaControllers?.firstOrNull()?.also { log("chosen media controller: ${it.packageName}") }
     }
 
-    private fun isMusicActive() =
-        getActiveMediaController()?.let { it.playbackState?.state == PlaybackState.STATE_PLAYING }
-            ?: false
+    private fun isMusicActive() = getActiveMediaController()?.let {
+        when (it.playbackState?.state) {
+            PlaybackState.STATE_PLAYING,
+            PlaybackState.STATE_FAST_FORWARDING,
+            PlaybackState.STATE_REWINDING,
+            PlaybackState.STATE_BUFFERING -> true
+            else -> false
+        }
+    } ?: false
 
     private fun sendMediaButtonEventAndTriggerVibration(keyCode: Int) {
         getActiveMediaController()?.transportControls?.also { controls ->
