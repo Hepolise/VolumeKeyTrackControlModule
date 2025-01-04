@@ -19,12 +19,16 @@ jobs:
         with:
           name: Build Artifacts    
 
+      - name: Generate Dynamic Tag
+        id: tag
+        run: echo "TAG_NAME=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: latest
-          release_name: Release latest
+          tag_name: ${{ env.TAG_NAME }}
+          release_name: Release ${{ env.TAG_NAME }}
           body: |
             Automatically generated release.
           draft: false
