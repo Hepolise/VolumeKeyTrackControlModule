@@ -42,9 +42,10 @@ jobs:
         run: |
           for file in *.apk; do
             echo "Uploading $file..."
+            upload_url=$(jq -r '.upload_url' <<< "${{ steps.create_release.outputs.upload_url }}" | sed 's/{?name,label}//')
             curl -X POST \
               -H "Authorization: token $GITHUB_TOKEN" \
               -H "Content-Type: application/vnd.android.package-archive" \
               --data-binary @"$file" \
-              "$(jq -r '.upload_url' <<< '${{ steps.create_release.outputs.upload_url }}' | sed 's/{?name,label}//')?name=$(basename "$file")"
+              "$upload_url?name=$(basename "$file")"
           done
