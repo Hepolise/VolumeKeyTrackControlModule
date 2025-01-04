@@ -36,16 +36,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log Create Release Output
+        run: echo "${{ steps.create_release.outputs.upload_url }}"
+
       - name: Upload APKs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "Release Upload URL: ${!steps.create_release.outputs.upload_url}"
           for file in *.apk; do
             echo "Uploading $file..."
-            upload_url=$(jq -r '.upload_url' <<< "${{ steps.create_release.outputs.upload_url }}" | sed 's/{?name,label}//')
+            upload_url="${{ steps.create_release.outputs.upload_url }}"
+            echo "Extracted upload URL: $upload_url"
+            # Clean up the URL
+            clean_url=$(echo "$upload_url" | sed 's/{?name,label}//')
+            echo "Cleaned upload URL: $clean_url"
             curl -X POST \
               -H "Authorization: token $GITHUB_TOKEN" \
               -H "Content-Type: application/vnd.android.package-archive" \
               --data-binary @"$file" \
-              "$upload_url?name=$(basename "$file")"
+              "$clean_url?name=$(basename "$file")"
           done
