@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "ru.hepolise.volumekeymusicmanagermodule"
         minSdk 25
-        targetSdk 34
+        targetSdk 35
         versionCode = Integer.parseInt(rootProject.ext["appVersionCode"].toString())
         versionName = rootProject.ext["appVersionName"].toString()
     }
@@ -31,10 +31,9 @@ android {
 }
 
 dependencies {
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.0.20"))
-    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.1.0"))
+    implementation 'androidx.core:core-ktx:1.15.0'
 
     // Xposed Framework API dependencies
     compileOnly 'de.robv.android.xposed:api:82'
-    compileOnly 'de.robv.android.xposed:api:82:sources'
 }
