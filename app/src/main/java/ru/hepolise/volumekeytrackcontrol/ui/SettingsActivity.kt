@@ -162,39 +162,41 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                     .height(116.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Box(
-                        modifier = Modifier.widthIn(min = 150.dp),
-                        contentAlignment = Alignment.CenterStart
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Text(
-                            text = if (isVibrationModePredefined) {
-                                stringResource(id = R.string.predefined_vibration)
-                            } else {
-                                stringResource(id = R.string.manual_vibration)
-                            },
-                            modifier = Modifier
-                                .padding(end = 8.dp)
-                                .clickable {
-                                    isVibrationModePredefined = !isVibrationModePredefined
-                                    sharedPreferences
-                                        .edit()
-                                        .putBoolean(VIBRATION_MODE, isVibrationModePredefined)
-                                        .apply()
-                                }
+                        Box(
+                            modifier = Modifier.widthIn(min = 150.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Text(
+                                text = if (isVibrationModePredefined) {
+                                    stringResource(id = R.string.predefined_vibration)
+                                } else {
+                                    stringResource(id = R.string.manual_vibration)
+                                },
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                                    .clickable {
+                                        isVibrationModePredefined = !isVibrationModePredefined
+                                        sharedPreferences
+                                            .edit()
+                                            .putBoolean(VIBRATION_MODE, isVibrationModePredefined)
+                                            .apply()
+                                    }
+                            )
+                        }
+                        Switch(
+                            checked = isVibrationModePredefined,
+                            onCheckedChange = {
+                                isVibrationModePredefined = it
+                                sharedPreferences.edit().putBoolean(VIBRATION_MODE, it).apply()
+                            }
                         )
                     }
-                    Switch(
-                        checked = isVibrationModePredefined,
-                        onCheckedChange = {
-                            isVibrationModePredefined = it
-                            sharedPreferences.edit().putBoolean(VIBRATION_MODE, it).apply()
-                        }
-                    )
                 }
 
                 if (isVibrationModePredefined && PredefinedEffects.isNotEmpty()) {
