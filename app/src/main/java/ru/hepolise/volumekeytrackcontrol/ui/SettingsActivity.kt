@@ -123,7 +123,6 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
     var selectedEffect by remember { mutableIntStateOf(sharedPreferences.getSelectedEffect()) }
     var vibrationLength by remember { mutableLongStateOf(sharedPreferences.getVibrationLength()) }
     var longPressDuration by remember { mutableLongStateOf(sharedPreferences.getLongPressDuration()) }
-//    var swapButtons by remember { mutableStateOf(sharedPreferences.getSwapButtons()) }
 
     Scaffold(
         topBar = {
@@ -241,28 +240,6 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                 Text(stringResource(R.string.test_vibration))
             }
 
-//            Spacer(modifier = Modifier.height(20.dp))
-//
-//            Text(text = stringResource(R.string.other_settings), fontSize = 20.sp)
-//
-//            Row(verticalAlignment = Alignment.CenterVertically) {
-//                Checkbox(
-//                    checked = swapButtons,
-//                    onCheckedChange = {
-//                        swapButtons = it
-//                        sharedPreferences.edit().putBoolean(SWAP_BUTTONS, it).apply()
-//                    }
-//                )
-//                Spacer(modifier = Modifier.width(4.dp))
-//                Text(
-//                    text = stringResource(R.string.swap_buttons),
-//                    modifier = Modifier.clickable {
-//                        swapButtons = !swapButtons
-//                        sharedPreferences.edit().putBoolean(SWAP_BUTTONS, swapButtons).apply()
-//                    }
-//                )
-//            }
-
             Spacer(modifier = Modifier.weight(1f))
 
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -275,7 +252,6 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                     selectedEffect = SELECTED_EFFECT_DEFAULT_VALUE
                     vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
                     longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
-//                    swapButtons = SWAP_BUTTONS_DEFAULT_VALUE
                     Toast.makeText(
                         context,
                         context.getString(R.string.settings_reset),

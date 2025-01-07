@@ -3,7 +3,6 @@
 
     <string name="vibration_settings">Vibration Settings</string>
     <string name="long_press_settings">Long Press Settings</string>
-    <!--    <string name="other_settings">Other Settings</string>-->
 
     <string name="predefined">Predefined</string>
     <string name="manual">Manual</string>
@@ -17,8 +16,6 @@
     <string name="test_vibration">Test Vibration</string>
 
     <string name="long_press_duration">Long Press Duration: %dms</string>
-
-    <!--    <string name="swap_buttons">Swap volume up/down buttons</string>-->
 
     <string name="restore_default">Restore Default</string>
     <string name="settings_reset">Settings are restored to default</string>

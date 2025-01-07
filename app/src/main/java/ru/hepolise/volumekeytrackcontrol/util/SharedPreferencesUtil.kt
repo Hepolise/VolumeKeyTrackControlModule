@@ -12,13 +12,11 @@ object SharedPreferencesUtil {
     const val SELECTED_EFFECT = "selectedEffect"
     const val VIBRATION_LENGTH = "vibrationLength"
     const val LONG_PRESS_DURATION = "longPressDuration"
-    const val SWAP_BUTTONS = "swapButtons"
 
     val VIBRATION_MODE_DEFAULT_VALUE = VibrationMode.PREDEFINED
     const val SELECTED_EFFECT_DEFAULT_VALUE = 0
     const val VIBRATION_LENGTH_DEFAULT_VALUE = 50L
     val LONG_PRESS_DURATION_DEFAULT_VALUE = ViewConfiguration.getLongPressTimeout().toLong()
-    const val SWAP_BUTTONS_DEFAULT_VALUE = false
 
     fun SharedPreferences?.getVibrationMode(): VibrationMode {
         val defaultValue = VIBRATION_MODE_DEFAULT_VALUE.mode
@@ -39,11 +37,6 @@ object SharedPreferencesUtil {
         val defaultValue = LONG_PRESS_DURATION_DEFAULT_VALUE
         return this?.getLong(LONG_PRESS_DURATION, defaultValue) ?: defaultValue
     }
-
-//    fun SharedPreferences?.getSwapButtons(): Boolean {
-//        val defaultValue = SWAP_BUTTONS_DEFAULT_VALUE
-//        return this?.getBoolean(SWAP_BUTTONS, defaultValue) ?: defaultValue
-//    }
 
     fun prefs(): SharedPreferences? {
         val pref = XSharedPreferences(BuildConfig.APPLICATION_ID, SETTINGS_PREFS_NAME)
