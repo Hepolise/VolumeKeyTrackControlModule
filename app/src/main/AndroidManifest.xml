@@ -6,13 +6,13 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:theme="@android:style/Theme.Material.NoActionBar.TranslucentDecor">
+        android:theme="@android:style/Theme.Material.NoActionBar">
 
         <!-- Main activity -->
         <activity
             android:name="ru.hepolise.volumekeytrackcontrol.ui.SettingsActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.Material.NoActionBar.TranslucentDecor">
+            android:theme="@android:style/Theme.Material.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

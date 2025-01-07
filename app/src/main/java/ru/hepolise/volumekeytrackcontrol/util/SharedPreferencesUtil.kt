@@ -13,14 +13,14 @@ object SharedPreferencesUtil {
     const val VIBRATION_LENGTH = "vibrationLength"
     const val LONG_PRESS_DURATION = "longPressDuration"
 
-    val VIBRATION_MODE_DEFAULT_VALUE = VibrationMode.PREDEFINED
+    const val VIBRATION_PREDEFINED_MODE_DEFAULT_VALUE = true
     const val SELECTED_EFFECT_DEFAULT_VALUE = 0
     const val VIBRATION_LENGTH_DEFAULT_VALUE = 50L
     val LONG_PRESS_DURATION_DEFAULT_VALUE = ViewConfiguration.getLongPressTimeout().toLong()
 
-    fun SharedPreferences?.getVibrationMode(): VibrationMode {
-        val defaultValue = VIBRATION_MODE_DEFAULT_VALUE.mode
-        return VibrationMode.fromInt(this?.getInt(VIBRATION_MODE, defaultValue) ?: defaultValue)
+    fun SharedPreferences?.isVibrationModePredefined(): Boolean {
+        val defaultValue = VIBRATION_PREDEFINED_MODE_DEFAULT_VALUE
+        return this?.getBoolean(VIBRATION_MODE, defaultValue) ?: defaultValue
     }
 
     fun SharedPreferences?.getSelectedEffect(): Int {
@@ -43,12 +43,4 @@ object SharedPreferencesUtil {
         return if (pref.file.canRead()) pref else null
     }
 
-}
-
-enum class VibrationMode(val mode: Int) {
-    PREDEFINED(0), MANUAL(1);
-
-    companion object {
-        fun fromInt(value: Int) = entries.first { it.mode == value }
-    }
 }

@@ -8,7 +8,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSelectedEffect
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationMode
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isVibrationModePredefined
 
 object VibratorUtil {
 
@@ -33,7 +33,7 @@ object VibratorUtil {
     }
 
     fun Vibrator.triggerVibration(prefs: SharedPreferences? = SharedPreferencesUtil.prefs()) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && prefs.getVibrationMode() == VibrationMode.PREDEFINED) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && prefs.isVibrationModePredefined()) {
             this.vibrate(
                 VibrationEffect.createPredefined(PredefinedEffects[prefs.getSelectedEffect()])
             )

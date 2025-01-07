@@ -12,8 +12,11 @@ import android.os.Vibrator
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -34,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
@@ -63,12 +68,11 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PRE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_MODE
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_MODE_DEFAULT_VALUE
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_PREDEFINED_MODE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSelectedEffect
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationMode
-import ru.hepolise.volumekeytrackcontrol.util.VibrationMode
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isVibrationModePredefined
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.PredefinedEffects
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
@@ -78,6 +82,7 @@ import kotlin.system.exitProcess
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             MaterialTheme(
                 colorScheme = dynamicColorScheme(context = this)
@@ -112,14 +117,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
         exitProcess(0)
     }
 
-    val vibrationOptions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        listOf(
-            R.string.predefined to 0,
-            R.string.manual to 1
-        )
-    } else emptyList()
-
-    var vibrationMode by remember { mutableStateOf(sharedPreferences.getVibrationMode()) }
+    var isVibrationModePredefined by remember { mutableStateOf(sharedPreferences.isVibrationModePredefined()) }
     var selectedEffect by remember { mutableIntStateOf(sharedPreferences.getSelectedEffect()) }
     var vibrationLength by remember { mutableLongStateOf(sharedPreferences.getVibrationLength()) }
     var longPressDuration by remember { mutableLongStateOf(sharedPreferences.getLongPressDuration()) }
@@ -146,10 +144,11 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                 onValueChange = {
                     longPressDuration = it.toLong()
                 },
-                valueRange = 50f..500f,
+                valueRange = 100f..1000f,
                 onValueChangeFinished = {
                     sharedPreferences.edit().putLong(LONG_PRESS_DURATION, longPressDuration).apply()
-                }
+                },
+                modifier = Modifier.widthIn(max = 300.dp)
             )
             Text(stringResource(R.string.long_press_duration, longPressDuration))
 
@@ -157,81 +156,93 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
 
             Text(text = stringResource(R.string.vibration_settings), fontSize = 20.sp)
 
-            if (vibrationOptions.isNotEmpty()) {
-                // Vibration Mode Selector
-                var vibrationExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = vibrationExpanded,
-                    onExpandedChange = { vibrationExpanded = !vibrationExpanded }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(116.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    TextField(
-                        value = stringResource(vibrationOptions[vibrationMode.mode].first),
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = vibrationExpanded)
-                        },
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                    )
-                    ExposedDropdownMenu(
-                        expanded = vibrationExpanded,
-                        onDismissRequest = { vibrationExpanded = false }) {
-                        vibrationOptions.forEachIndexed { index, option ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(option.first)) },
-                                onClick = {
-                                    vibrationMode = VibrationMode.fromInt(index)
-                                    sharedPreferences.edit().putInt(VIBRATION_MODE, index).apply()
-                                    vibrationExpanded = false
+                    Box(
+                        modifier = Modifier.widthIn(min = 150.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Text(
+                            text = if (isVibrationModePredefined) {
+                                stringResource(id = R.string.predefined_vibration)
+                            } else {
+                                stringResource(id = R.string.manual_vibration)
+                            },
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    isVibrationModePredefined = !isVibrationModePredefined
+                                    sharedPreferences
+                                        .edit()
+                                        .putBoolean(VIBRATION_MODE, isVibrationModePredefined)
+                                        .apply()
                                 }
-                            )
-                        }
+                        )
                     }
+                    Switch(
+                        checked = isVibrationModePredefined,
+                        onCheckedChange = {
+                            isVibrationModePredefined = it
+                            sharedPreferences.edit().putBoolean(VIBRATION_MODE, it).apply()
+                        }
+                    )
                 }
-            }
 
-            if (vibrationMode == VibrationMode.PREDEFINED && PredefinedEffects.isNotEmpty()) {
-                var effectExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = effectExpanded,
-                    onExpandedChange = { effectExpanded = !effectExpanded }
-                ) {
-                    TextField(
-                        value = stringResource(VibrationEffectTitles[PredefinedEffects[selectedEffect]]!!),
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = effectExpanded)
-                        },
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                    )
-                    ExposedDropdownMenu(
+                if (isVibrationModePredefined && PredefinedEffects.isNotEmpty()) {
+                    var effectExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
                         expanded = effectExpanded,
-                        onDismissRequest = { effectExpanded = false }) {
-                        PredefinedEffects.forEachIndexed { index, effect ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(VibrationEffectTitles[effect]!!)) },
-                                onClick = {
-                                    selectedEffect = index
-                                    sharedPreferences.edit().putInt(SELECTED_EFFECT, index).apply()
-                                    effectExpanded = false
-                                }
-                            )
+                        onExpandedChange = { effectExpanded = !effectExpanded }
+                    ) {
+                        TextField(
+                            value = stringResource(VibrationEffectTitles[PredefinedEffects[selectedEffect]]!!),
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = effectExpanded)
+                            },
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                        )
+                        ExposedDropdownMenu(
+                            expanded = effectExpanded,
+                            onDismissRequest = { effectExpanded = false }) {
+                            PredefinedEffects.forEachIndexed { index, effect ->
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(VibrationEffectTitles[effect]!!)) },
+                                    onClick = {
+                                        selectedEffect = index
+                                        sharedPreferences.edit().putInt(SELECTED_EFFECT, index)
+                                            .apply()
+                                        effectExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
+                } else if (!isVibrationModePredefined) {
+                    Slider(
+                        value = vibrationLength.toFloat(),
+                        onValueChange = {
+                            vibrationLength = it.toLong()
+                        },
+                        valueRange = 10f..500f,
+                        onValueChangeFinished = {
+                            sharedPreferences.edit().putLong(VIBRATION_LENGTH, vibrationLength)
+                                .apply()
+                        },
+                        modifier = Modifier.widthIn(max = 300.dp)
+                    )
+                    Text(stringResource(R.string.vibration_length, vibrationLength))
                 }
-            } else if (vibrationMode == VibrationMode.MANUAL) {
-                Slider(
-                    value = vibrationLength.toFloat(),
-                    onValueChange = {
-                        vibrationLength = it.toLong()
-                    },
-                    valueRange = 10f..500f,
-                    onValueChangeFinished = {
-                        sharedPreferences.edit().putLong(VIBRATION_LENGTH, vibrationLength).apply()
-                    }
-                )
-                Text(stringResource(R.string.vibration_length, vibrationLength))
             }
 
             Button(onClick = {
@@ -244,11 +255,11 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
 
             Row(modifier = Modifier.fillMaxWidth()) {
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.weight(1f))
 
                 Button(onClick = {
                     sharedPreferences.edit().clear().apply()
-                    vibrationMode = VIBRATION_MODE_DEFAULT_VALUE
+                    isVibrationModePredefined = VIBRATION_PREDEFINED_MODE_DEFAULT_VALUE
                     selectedEffect = SELECTED_EFFECT_DEFAULT_VALUE
                     vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
                     longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
@@ -261,7 +272,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                     Text(stringResource(R.string.restore_default))
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Button(onClick = {
                     val intent = Intent(Intent.ACTION_VIEW)

@@ -4,8 +4,8 @@
     <string name="vibration_settings">Vibration Settings</string>
     <string name="long_press_settings">Long Press Settings</string>
 
-    <string name="predefined">Predefined</string>
-    <string name="manual">Manual</string>
+    <string name="predefined_vibration">Predefined Vibration</string>
+    <string name="manual_vibration">Manual Vibration</string>
 
     <string name="effect_click">Click</string>
     <string name="effect_double_click">Double Click</string>
