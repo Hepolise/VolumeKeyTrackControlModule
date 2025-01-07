@@ -1,22 +1,23 @@
-package ru.hepolise.volumekeytrackcontrolmodule
+package ru.hepolise.volumekeytrackcontrol.module
 
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.media.AudioManager
 import android.media.session.MediaController
 import android.media.session.PlaybackState
-import android.os.Build
 import android.os.Handler
 import android.os.PowerManager
 import android.os.Vibrator
-import android.os.VibratorManager
 import android.view.Display
 import android.view.KeyEvent
-import android.view.ViewConfiguration
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
-import ru.hepolise.volumekeytrackcontrolmodule.extension.VibratorExtension.triggerVibration
+import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
+import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
+import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
 
 
 object VolumeKeyControlModuleHandlers {
@@ -28,8 +29,6 @@ object VolumeKeyControlModuleHandlers {
     private const val CLASS_MEDIA_SESSION_LEGACY_HELPER =
         "android.media.session.MediaSessionLegacyHelper"
     private const val CLASS_COMPONENT_NAME = "android.content.ComponentName"
-
-    private val TIMEOUT = ViewConfiguration.getLongPressTimeout().toLong()
 
     private var isLongPress = false
     private var isDownPressed = false
@@ -129,14 +128,7 @@ object VolumeKeyControlModuleHandlers {
                 ?: throw NullPointerException("Unable to obtain power service")
             displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager?
                 ?: throw NullPointerException("Unable to obtain display service")
-            vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager =
-                    getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                vibratorManager.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            }
+            vibrator = context.getVibrator()
         }
 
         val mediaSessionHelperClass = XposedHelpers.findClass(
@@ -237,7 +229,10 @@ object VolumeKeyControlModuleHandlers {
 
     private fun handleVolumePlayPausePress(instance: Any) {
         val handler = instance.getHandler()
-        handler.postDelayed(getRunnable(instance, VOLUME_BOTH_LONG_PRESS), TIMEOUT)
+        handler.postDelayed(
+            getRunnable(instance, VOLUME_BOTH_LONG_PRESS),
+            SharedPreferencesUtil.prefs().getLongPressDuration()
+        )
     }
 
     private fun handleVolumeSkipPress(instance: Any, keyCode: Int) {
@@ -248,7 +243,7 @@ object VolumeKeyControlModuleHandlers {
                 KeyEvent.KEYCODE_VOLUME_DOWN -> getRunnable(instance, VOLUME_DOWN_LONG_PRESS)
                 else -> return
             },
-            TIMEOUT
+            SharedPreferencesUtil.prefs().getLongPressDuration()
         )
     }
 
