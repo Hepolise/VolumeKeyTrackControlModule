@@ -15,7 +15,8 @@ Works when the screen is off.
 
 ## Requirements
 
-Android 11+ (may be working on lower versions, you can try and install it even on Android 7)
+* [LSPosed](https://github.com/LSPosed/LSPosed) 93+
+* Android 11+ (may be working on lower versions, you can try and install it even on Android 8.1)
 
 ## Tested on
 
