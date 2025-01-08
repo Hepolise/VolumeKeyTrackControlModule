@@ -1,4 +1,4 @@
-package ru.hepolise.volumekeytrackcontrolmodule
+package ru.hepolise.volumekeytrackcontrol.module
 
 import android.content.Context
 import android.view.KeyEvent
@@ -6,8 +6,9 @@ import androidx.annotation.Keep
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
-import ru.hepolise.volumekeytrackcontrolmodule.VolumeKeyControlModuleHandlers.handleConstructPhoneWindowManager
-import ru.hepolise.volumekeytrackcontrolmodule.VolumeKeyControlModuleHandlers.handleInterceptKeyBeforeQueueing
+import ru.hepolise.volumekeytrackcontrol.module.VolumeKeyControlModuleHandlers.handleConstructPhoneWindowManager
+import ru.hepolise.volumekeytrackcontrol.module.VolumeKeyControlModuleHandlers.handleInterceptKeyBeforeQueueing
+import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
 import java.io.Serializable
 
 @Keep

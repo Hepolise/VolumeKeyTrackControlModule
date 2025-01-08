@@ -14,25 +14,39 @@ jobs:
     runs-on: ubuntu-latest
     needs: call-build
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
           name: Build Artifacts    
 
-      - name: Generate Dynamic Tag
-        id: tag
-        run: echo "TAG_NAME=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_ENV
+      - name: Extract APK Version
+        id: apk_version
+        run: |
+          APK_FILE=$(ls *.apk | head -n 1) # Get the first APK file
+          echo "Found APK: $APK_FILE"
+          VERSION=$(echo $APK_FILE | grep -oP '\d+\.\d+\.\d+')
+          echo "Extracted Version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          git log --pretty=format:"- %s [%h]" $(git describe --tags --abbrev=0)..HEAD >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: ${{ env.TAG_NAME }}
-          release_name: Release ${{ env.TAG_NAME }}
-          body: |
-            Automatically generated release.
-          draft: false
-          prerelease: false
+          tag_name: v${{ env.VERSION }}
+          release_name: Release v${{ env.VERSION }}
+          body: ${{ env.CHANGELOG }}
+          draft: true
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
