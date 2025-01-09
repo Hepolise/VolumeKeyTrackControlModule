@@ -6,20 +6,12 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSelectedEffect
+import androidx.annotation.RequiresApi
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isVibrationModePredefined
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationType
 
 object VibratorUtil {
-
-    val PredefinedEffects = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        listOf(
-            VibrationEffect.EFFECT_CLICK,
-            VibrationEffect.EFFECT_DOUBLE_CLICK,
-            VibrationEffect.EFFECT_HEAVY_CLICK,
-            VibrationEffect.EFFECT_TICK
-        )
-    } else emptyList()
 
     fun Context.getVibrator(): Vibrator {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -33,19 +25,51 @@ object VibratorUtil {
     }
 
     fun Vibrator.triggerVibration(prefs: SharedPreferences? = SharedPreferencesUtil.prefs()) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && prefs.isVibrationModePredefined()) {
-            this.vibrate(
-                VibrationEffect.createPredefined(PredefinedEffects[prefs.getSelectedEffect()])
-            )
+        val vibrationType = prefs.getVibrationType()
+        if (vibrationType == VibrationType.Disabled) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrationType != VibrationType.Manual) {
+            this.vibrate(VibrationEffect.createPredefined(vibrationType.value))
         } else {
-            val millis = prefs.getVibrationLength()
             this.vibrate(
                 VibrationEffect.createOneShot(
-                    millis,
-                    VibrationEffect.DEFAULT_AMPLITUDE
+                    prefs.getVibrationLength(),
+                    prefs.getVibrationAmplitude()
                 )
             )
         }
     }
+}
 
+
+sealed class VibrationType(val value: Int) {
+    data object Disabled : VibrationType(-1)
+    data object Manual : VibrationType(-1)
+
+    companion object {
+        val values: List<VibrationType> by lazy {
+            mutableListOf<VibrationType>().apply {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    add(Click)
+                    add(DoubleClick)
+                    add(HeavyClick)
+                    add(Tick)
+                }
+
+                add(Manual)
+                add(Disabled)
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    data object Click : VibrationType(VibrationEffect.EFFECT_CLICK)
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    data object DoubleClick : VibrationType(VibrationEffect.EFFECT_DOUBLE_CLICK)
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    data object HeavyClick : VibrationType(VibrationEffect.EFFECT_HEAVY_CLICK)
+
+    @RequiresApi(Build.VERSION_CODES.Q)
+    data object Tick : VibrationType(VibrationEffect.EFFECT_TICK)
 }

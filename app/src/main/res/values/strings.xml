@@ -4,22 +4,32 @@
     <string name="vibration_settings">Vibration Settings</string>
     <string name="long_press_settings">Long Press Settings</string>
 
-    <string name="predefined_vibration">Predefined Vibration</string>
-    <string name="manual_vibration">Manual Vibration</string>
+    <string name="vibration_effect_click">Click</string>
+    <string name="vibration_effect_double_click">Double Click</string>
+    <string name="vibration_effect_heavy_click">Heavy Click</string>
+    <string name="vibration_effect_tick">Tick</string>
 
-    <string name="effect_click">Click</string>
-    <string name="effect_double_click">Double Click</string>
-    <string name="effect_heavy_click">Heavy Click</string>
-    <string name="effect_tick">Tick</string>
+    <string name="vibration_disabled">Disabled</string>
+    <string name="vibration_manual">Manual</string>
 
     <string name="vibration_length">Vibration Length: %dms</string>
+    <string name="vibration_amplitude">Vibration Amplitude: %d</string>
+    <string name="vibration_length_dialog_title">Vibration Length</string>
+    <string name="vibration_amplitude_dialog_title">Vibration Amplitude</string>
     <string name="test_vibration">Test Vibration</string>
 
     <string name="long_press_duration">Long Press Duration: %dms</string>
+    <string name="long_press_duration_dialog_title">Long Press Duration</string>
 
-    <string name="restore_default">Restore Default</string>
-    <string name="settings_reset">Settings are restored to default</string>
+    <string name="settings_reset">Reset settings</string>
+    <string name="settings_reset_toast">Settings are reset to default</string>
     <string name="about">About</string>
 
     <string name="module_is_not_enabled">Module is not enabled in LSPosed</string>
+
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="edit">Edit</string>
+
+    <string name="value_in_range">Value in range %d..%d</string>
 </resources>
