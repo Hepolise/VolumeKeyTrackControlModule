@@ -7,6 +7,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.annotation.RequiresApi
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationType
 
@@ -27,14 +28,12 @@ object VibratorUtil {
         val vibrationType = prefs.getVibrationType()
         if (vibrationType == VibrationType.Disabled) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrationType != VibrationType.Manual) {
-            this.vibrate(
-                VibrationEffect.createPredefined(vibrationType.value)
-            )
+            this.vibrate(VibrationEffect.createPredefined(vibrationType.value))
         } else {
             this.vibrate(
                 VibrationEffect.createOneShot(
                     prefs.getVibrationLength(),
-                    VibrationEffect.DEFAULT_AMPLITUDE
+                    prefs.getVibrationAmplitude()
                 )
             )
         }

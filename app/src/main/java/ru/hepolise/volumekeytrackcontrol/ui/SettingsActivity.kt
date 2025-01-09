@@ -14,12 +14,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -35,6 +35,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,10 +74,13 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_D
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SELECTED_EFFECT
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SELECTED_EFFECT_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSelectedEffect
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
 import ru.hepolise.volumekeytrackcontrol.util.VibrationType
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
@@ -133,126 +137,52 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
         exitProcess(0)
     }
 
+    var longPressDuration by remember { mutableLongStateOf(sharedPreferences.getLongPressDuration()) }
     var selectedEffect by remember { mutableIntStateOf(sharedPreferences.getSelectedEffect()) }
     var vibrationLength by remember { mutableLongStateOf(sharedPreferences.getVibrationLength()) }
-    var longPressDuration by remember { mutableLongStateOf(sharedPreferences.getLongPressDuration()) }
+    var vibrationAmplitude by remember { mutableIntStateOf(sharedPreferences.getVibrationAmplitude()) }
 
     Scaffold(
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.app_name)) })
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Text(text = stringResource(R.string.long_press_settings), fontSize = 20.sp)
-
-            Slider(
-                value = longPressDuration.toFloat(),
-                onValueChange = {
-                    longPressDuration = it.toLong()
-                },
-                valueRange = 100f..1000f,
-                onValueChangeFinished = {
-                    sharedPreferences.edit().putLong(LONG_PRESS_DURATION, longPressDuration).apply()
-                },
-                modifier = Modifier.widthIn(max = 300.dp)
-            )
-
-            var showLongPressTimeoutDialog by remember { mutableStateOf(false) }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.long_press_duration, longPressDuration))
-                IconButton(
-                    onClick = {
-                        showLongPressTimeoutDialog = true
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = stringResource(R.string.edit)
-                    )
-                }
-            }
-
-            if (showLongPressTimeoutDialog) {
-                NumberAlertDialog(
-                    title = stringResource(R.string.long_press_duration_dialog_title),
-                    defaultValue = longPressDuration,
-                    minValue = 100,
-                    maxValue = 1000,
-                    onDismissRequest = { showLongPressTimeoutDialog = false },
-                    onConfirm = {
-                        longPressDuration = it
-                        sharedPreferences.edit().putLong(LONG_PRESS_DURATION, it).apply()
-                        showLongPressTimeoutDialog = false
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text(text = stringResource(R.string.vibration_settings), fontSize = 20.sp)
-
-            val vibrationType = VibrationType.values[selectedEffect]
-            var effectExpanded by remember { mutableStateOf(false) }
-            ExposedDropdownMenuBox(
-                expanded = effectExpanded,
-                onExpandedChange = { effectExpanded = !effectExpanded }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(12.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 48.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TextField(
-                    value = stringResource(VibrationEffectTitles[vibrationType]!!),
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = effectExpanded)
-                    },
-                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = effectExpanded,
-                    onDismissRequest = { effectExpanded = false }) {
-                    VibrationType.values.forEachIndexed { index, effect ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(VibrationEffectTitles[effect]!!)) },
-                            onClick = {
-                                selectedEffect = index
-                                sharedPreferences.edit().putInt(SELECTED_EFFECT, index)
-                                    .apply()
-                                effectExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
 
-            if (vibrationType == VibrationType.Manual) {
+                Text(text = stringResource(R.string.long_press_settings), fontSize = 20.sp)
+
                 Slider(
-                    value = vibrationLength.toFloat(),
+                    value = longPressDuration.toFloat(),
                     onValueChange = {
-                        vibrationLength = it.toLong()
+                        longPressDuration = it.toLong()
                     },
-                    valueRange = 10f..500f,
+                    valueRange = 100f..1000f,
                     onValueChangeFinished = {
-                        sharedPreferences.edit().putLong(VIBRATION_LENGTH, vibrationLength)
+                        sharedPreferences.edit().putLong(LONG_PRESS_DURATION, longPressDuration)
                             .apply()
                     },
                     modifier = Modifier.widthIn(max = 300.dp)
                 )
 
-
-                var showManualVibrationLengthDialog by remember { mutableStateOf(false) }
+                var showLongPressTimeoutDialog by remember { mutableStateOf(false) }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.vibration_length, vibrationLength))
+                    Text(stringResource(R.string.long_press_duration, longPressDuration))
                     IconButton(
                         onClick = {
-                            showManualVibrationLengthDialog = true
+                            showLongPressTimeoutDialog = true
                         }
                     ) {
                         Icon(
@@ -262,49 +192,176 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                     }
                 }
 
-                if (showManualVibrationLengthDialog) {
+                if (showLongPressTimeoutDialog) {
                     NumberAlertDialog(
-                        title = stringResource(R.string.vibration_length_dialog_title),
-                        defaultValue = vibrationLength,
-                        minValue = 10,
-                        maxValue = 500,
-                        onDismissRequest = { showManualVibrationLengthDialog = false },
+                        title = stringResource(R.string.long_press_duration_dialog_title),
+                        defaultValue = longPressDuration,
+                        minValue = 100,
+                        maxValue = 1000,
+                        onDismissRequest = { showLongPressTimeoutDialog = false },
                         onConfirm = {
-                            vibrationLength = it
-                            sharedPreferences.edit().putLong(VIBRATION_LENGTH, it).apply()
-                            showManualVibrationLengthDialog = false
+                            longPressDuration = it
+                            sharedPreferences.edit().putLong(LONG_PRESS_DURATION, it).apply()
+                            showLongPressTimeoutDialog = false
                         }
                     )
                 }
 
-            }
+                HorizontalDivider(modifier = Modifier.widthIn(max = 300.dp))
 
-            if (vibrationType != VibrationType.Disabled) {
-                Button(onClick = {
-                    vibrator?.triggerVibration(sharedPreferences)
-                }) {
-                    Text(stringResource(R.string.test_vibration))
+                Text(text = stringResource(R.string.vibration_settings), fontSize = 20.sp)
+
+                val vibrationType = VibrationType.values[selectedEffect]
+                var effectExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = effectExpanded,
+                    onExpandedChange = { effectExpanded = !effectExpanded }
+                ) {
+                    TextField(
+                        value = stringResource(VibrationEffectTitles[vibrationType]!!),
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = effectExpanded)
+                        },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = effectExpanded,
+                        onDismissRequest = { effectExpanded = false }) {
+                        VibrationType.values.forEachIndexed { index, effect ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(VibrationEffectTitles[effect]!!)) },
+                                onClick = {
+                                    selectedEffect = index
+                                    sharedPreferences.edit().putInt(SELECTED_EFFECT, index)
+                                        .apply()
+                                    effectExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (vibrationType == VibrationType.Manual) {
+                    Slider(
+                        value = vibrationLength.toFloat(),
+                        onValueChange = {
+                            vibrationLength = it.toLong()
+                        },
+                        valueRange = 10f..500f,
+                        onValueChangeFinished = {
+                            sharedPreferences.edit().putLong(VIBRATION_LENGTH, vibrationLength)
+                                .apply()
+                        },
+                        modifier = Modifier.widthIn(max = 300.dp)
+                    )
+
+                    var showManualVibrationLengthDialog by remember { mutableStateOf(false) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.vibration_length, vibrationLength))
+                        IconButton(
+                            onClick = {
+                                showManualVibrationLengthDialog = true
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.edit)
+                            )
+                        }
+                    }
+
+                    if (showManualVibrationLengthDialog) {
+                        NumberAlertDialog(
+                            title = stringResource(R.string.vibration_length_dialog_title),
+                            defaultValue = vibrationLength,
+                            minValue = 10,
+                            maxValue = 500,
+                            onDismissRequest = { showManualVibrationLengthDialog = false },
+                            onConfirm = {
+                                vibrationLength = it
+                                sharedPreferences.edit().putLong(VIBRATION_LENGTH, it).apply()
+                                showManualVibrationLengthDialog = false
+                            }
+                        )
+                    }
+
+                    Slider(
+                        value = vibrationAmplitude.toFloat(),
+                        onValueChange = {
+                            vibrationAmplitude = it.toInt()
+                        },
+                        valueRange = 1f..255f,
+                        onValueChangeFinished = {
+                            sharedPreferences.edit().putInt(VIBRATION_AMPLITUDE, vibrationAmplitude)
+                                .apply()
+                        },
+                        modifier = Modifier.widthIn(max = 300.dp)
+                    )
+
+                    var showVibrationAmplitudeDialog by remember { mutableStateOf(false) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.vibration_amplitude, vibrationAmplitude))
+                        IconButton(
+                            onClick = {
+                                showVibrationAmplitudeDialog = true
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.edit)
+                            )
+                        }
+                    }
+
+                    if (showVibrationAmplitudeDialog) {
+                        NumberAlertDialog(
+                            title = stringResource(R.string.vibration_amplitude_dialog_title),
+                            defaultValue = vibrationAmplitude.toLong(),
+                            minValue = 1,
+                            maxValue = 255,
+                            onDismissRequest = { showVibrationAmplitudeDialog = false },
+                            onConfirm = {
+                                vibrationAmplitude = it.toInt()
+                                sharedPreferences.edit().putInt(VIBRATION_AMPLITUDE, it.toInt())
+                                    .apply()
+                                showVibrationAmplitudeDialog = false
+                            }
+                        )
+                    }
+
+                }
+
+                if (vibrationType != VibrationType.Disabled) {
+                    Button(onClick = {
+                        vibrator?.triggerVibration(sharedPreferences)
+                    }) {
+                        Text(stringResource(R.string.test_vibration))
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+            ) {
                 Spacer(modifier = Modifier.weight(1f))
 
                 Button(onClick = {
                     sharedPreferences.edit().clear().apply()
                     selectedEffect = SELECTED_EFFECT_DEFAULT_VALUE
                     vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
+                    vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
                     longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
                     Toast.makeText(
                         context,
-                        context.getString(R.string.settings_reset),
+                        context.getString(R.string.settings_reset_toast),
                         Toast.LENGTH_SHORT
                     ).show()
                 }) {
-                    Text(stringResource(R.string.restore_default))
+                    Text(stringResource(R.string.settings_reset))
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
