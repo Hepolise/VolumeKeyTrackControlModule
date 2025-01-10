@@ -1,7 +1,6 @@
 package ru.hepolise.volumekeytrackcontrol.ui
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -64,10 +63,17 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ru.hepolise.volumekeytrackcontrol.util.Constants
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SELECTED_EFFECT
@@ -78,14 +84,14 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AM
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSelectedEffect
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationType
 import ru.hepolise.volumekeytrackcontrol.util.VibrationType
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
 import ru.hepolise.volumekeytrackcontrolmodule.R
-import kotlin.system.exitProcess
+
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -130,14 +136,12 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
     val sharedPreferences = try {
         context.getSharedPreferences(SETTINGS_PREFS_NAME, Context.MODE_WORLD_READABLE)
     } catch (e: SecurityException) {
-        Toast.makeText(context, R.string.module_is_not_enabled, Toast.LENGTH_LONG).show()
-        // Clear the application stack and exit
-        (context as? Activity)?.finishAffinity()
-        exitProcess(0)
+        ModuleIsNotEnabled()
+        return
     }
 
     var longPressDuration by remember { mutableIntStateOf(sharedPreferences.getLongPressDuration()) }
-    var selectedEffect by remember { mutableIntStateOf(sharedPreferences.getSelectedEffect()) }
+    var vibrationType by remember { mutableStateOf(sharedPreferences.getVibrationType()) }
     var vibrationLength by remember { mutableIntStateOf(sharedPreferences.getVibrationLength()) }
     var vibrationAmplitude by remember { mutableIntStateOf(sharedPreferences.getVibrationAmplitude()) }
 
@@ -210,7 +214,6 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
 
                 Text(text = stringResource(R.string.vibration_settings), fontSize = 20.sp)
 
-                val vibrationType = VibrationType.values[selectedEffect]
                 var effectExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(
                     expanded = effectExpanded,
@@ -228,12 +231,12 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                     ExposedDropdownMenu(
                         expanded = effectExpanded,
                         onDismissRequest = { effectExpanded = false }) {
-                        VibrationType.values.forEachIndexed { index, effect ->
+                        VibrationType.values.forEach { effect ->
                             DropdownMenuItem(
                                 text = { Text(stringResource(VibrationEffectTitles[effect]!!)) },
                                 onClick = {
-                                    selectedEffect = index
-                                    sharedPreferences.edit().putInt(SELECTED_EFFECT, index)
+                                    vibrationType = effect
+                                    sharedPreferences.edit().putString(SELECTED_EFFECT, effect.key)
                                         .apply()
                                     effectExpanded = false
                                 }
@@ -350,7 +353,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
 
                 Button(onClick = {
                     sharedPreferences.edit().clear().apply()
-                    selectedEffect = SELECTED_EFFECT_DEFAULT_VALUE
+                    vibrationType = VibrationType.fromKey(SELECTED_EFFECT_DEFAULT_VALUE)
                     vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
                     vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
                     longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
@@ -367,8 +370,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
 
                 Button(onClick = {
                     val intent = Intent(Intent.ACTION_VIEW)
-                    intent.data =
-                        Uri.parse("https://github.com/Hepolise/VolumeKeyTrackControlModule")
+                    intent.data = Uri.parse(Constants.GITHUB_URL)
                     context.startActivity(intent)
                 }) {
                     Text(stringResource(R.string.about))
@@ -436,6 +438,49 @@ fun NumberAlertDialog(
     )
     LaunchedEffect(true) {
         focusRequester.requestFocus()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ModuleIsNotEnabled() {
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text(stringResource(R.string.app_name)) })
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = buildAnnotatedString {
+                        append(stringResource(id = R.string.module_is_not_enabled))
+                        append(" ")
+                        withLink(
+                            LinkAnnotation.Url(
+                                url = Constants.GITHUB_NEW_ISSUE,
+                                styles = TextLinkStyles(
+                                    style = SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textDecoration = TextDecoration.Underline
+                                    )
+                                )
+                            )
+                        ) {
+                            append(stringResource(id = R.string.open_issue))
+                        }
+                    }
+                )
+            }
+        }
     }
 }
 

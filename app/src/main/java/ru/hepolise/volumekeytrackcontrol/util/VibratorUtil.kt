@@ -41,9 +41,9 @@ object VibratorUtil {
 }
 
 
-sealed class VibrationType(val value: Int) {
-    data object Disabled : VibrationType(-1)
-    data object Manual : VibrationType(-1)
+sealed class VibrationType(val value: Int, val key: String) {
+    data object Disabled : VibrationType(-1, "disabled")
+    data object Manual : VibrationType(-1, "manual")
 
     companion object {
         val values: List<VibrationType> by lazy {
@@ -59,17 +59,19 @@ sealed class VibrationType(val value: Int) {
                 add(Disabled)
             }
         }
+
+        fun fromKey(key: String): VibrationType = values.single { it.key == key }
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    data object Click : VibrationType(VibrationEffect.EFFECT_CLICK)
+    data object Click : VibrationType(VibrationEffect.EFFECT_CLICK, "click")
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    data object DoubleClick : VibrationType(VibrationEffect.EFFECT_DOUBLE_CLICK)
+    data object DoubleClick : VibrationType(VibrationEffect.EFFECT_DOUBLE_CLICK, "double_click")
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    data object HeavyClick : VibrationType(VibrationEffect.EFFECT_HEAVY_CLICK)
+    data object HeavyClick : VibrationType(VibrationEffect.EFFECT_HEAVY_CLICK, "heavy_click")
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    data object Tick : VibrationType(VibrationEffect.EFFECT_TICK)
+    data object Tick : VibrationType(VibrationEffect.EFFECT_TICK, "tick")
 }
