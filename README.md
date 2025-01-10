@@ -22,4 +22,5 @@ Works when the screen is off.
 
 * OnePlus 10 Pro (Android 13 & 14)
 
-[Open an issue](https://github.com/Hepolise/VolumeKeyMusicManagerModule/issues/new) if you are experiencing some troubles on your device
+[Open an issue](https://github.com/Hepolise/VolumeKeyTrackControlModule/issues/new) if you are
+experiencing some troubles on your device
