@@ -15,5 +15,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "VolumeKeyMusicManagerModule"
+rootProject.name = "VolumeKeyTrackControlModule"
 include ':app'
