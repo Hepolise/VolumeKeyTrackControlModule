@@ -14,9 +14,9 @@ object SharedPreferencesUtil {
     const val LONG_PRESS_DURATION = "longPressDuration"
 
     const val SELECTED_EFFECT_DEFAULT_VALUE = 0
-    const val VIBRATION_LENGTH_DEFAULT_VALUE = 50L
+    const val VIBRATION_LENGTH_DEFAULT_VALUE = 50
     const val VIBRATION_AMPLITUDE_DEFAULT_VALUE = 128
-    val LONG_PRESS_DURATION_DEFAULT_VALUE = ViewConfiguration.getLongPressTimeout().toLong()
+    val LONG_PRESS_DURATION_DEFAULT_VALUE = ViewConfiguration.getLongPressTimeout()
 
     fun SharedPreferences?.getSelectedEffect(): Int {
         val defaultValue = SELECTED_EFFECT_DEFAULT_VALUE
@@ -27,9 +27,9 @@ object SharedPreferencesUtil {
         return VibrationType.values[getSelectedEffect()]
     }
 
-    fun SharedPreferences?.getVibrationLength(): Long {
+    fun SharedPreferences?.getVibrationLength(): Int {
         val defaultValue = VIBRATION_LENGTH_DEFAULT_VALUE
-        return this?.getLong(VIBRATION_LENGTH, defaultValue) ?: defaultValue
+        return this?.getInt(VIBRATION_LENGTH, defaultValue) ?: defaultValue
     }
 
     fun SharedPreferences?.getVibrationAmplitude(): Int {
@@ -37,9 +37,9 @@ object SharedPreferencesUtil {
         return this?.getInt(VIBRATION_AMPLITUDE, defaultValue) ?: defaultValue
     }
 
-    fun SharedPreferences?.getLongPressDuration(): Long {
+    fun SharedPreferences?.getLongPressDuration(): Int {
         val defaultValue = LONG_PRESS_DURATION_DEFAULT_VALUE
-        return this?.getLong(LONG_PRESS_DURATION, defaultValue) ?: defaultValue
+        return this?.getInt(LONG_PRESS_DURATION, defaultValue) ?: defaultValue
     }
 
     fun prefs(): SharedPreferences? {

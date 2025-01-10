@@ -55,7 +55,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -137,9 +136,9 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
         exitProcess(0)
     }
 
-    var longPressDuration by remember { mutableLongStateOf(sharedPreferences.getLongPressDuration()) }
+    var longPressDuration by remember { mutableIntStateOf(sharedPreferences.getLongPressDuration()) }
     var selectedEffect by remember { mutableIntStateOf(sharedPreferences.getSelectedEffect()) }
-    var vibrationLength by remember { mutableLongStateOf(sharedPreferences.getVibrationLength()) }
+    var vibrationLength by remember { mutableIntStateOf(sharedPreferences.getVibrationLength()) }
     var vibrationAmplitude by remember { mutableIntStateOf(sharedPreferences.getVibrationAmplitude()) }
 
     Scaffold(
@@ -167,11 +166,11 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                 Slider(
                     value = longPressDuration.toFloat(),
                     onValueChange = {
-                        longPressDuration = it.toLong()
+                        longPressDuration = it.toInt()
                     },
                     valueRange = 100f..1000f,
                     onValueChangeFinished = {
-                        sharedPreferences.edit().putLong(LONG_PRESS_DURATION, longPressDuration)
+                        sharedPreferences.edit().putInt(LONG_PRESS_DURATION, longPressDuration)
                             .apply()
                     },
                     modifier = Modifier.widthIn(max = 300.dp)
@@ -201,7 +200,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                         onDismissRequest = { showLongPressTimeoutDialog = false },
                         onConfirm = {
                             longPressDuration = it
-                            sharedPreferences.edit().putLong(LONG_PRESS_DURATION, it).apply()
+                            sharedPreferences.edit().putInt(LONG_PRESS_DURATION, it).apply()
                             showLongPressTimeoutDialog = false
                         }
                     )
@@ -247,11 +246,11 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                     Slider(
                         value = vibrationLength.toFloat(),
                         onValueChange = {
-                            vibrationLength = it.toLong()
+                            vibrationLength = it.toInt()
                         },
                         valueRange = 10f..500f,
                         onValueChangeFinished = {
-                            sharedPreferences.edit().putLong(VIBRATION_LENGTH, vibrationLength)
+                            sharedPreferences.edit().putInt(VIBRATION_LENGTH, vibrationLength)
                                 .apply()
                         },
                         modifier = Modifier.widthIn(max = 300.dp)
@@ -281,7 +280,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                             onDismissRequest = { showManualVibrationLengthDialog = false },
                             onConfirm = {
                                 vibrationLength = it
-                                sharedPreferences.edit().putLong(VIBRATION_LENGTH, it).apply()
+                                sharedPreferences.edit().putInt(VIBRATION_LENGTH, it).apply()
                                 showManualVibrationLengthDialog = false
                             }
                         )
@@ -318,13 +317,13 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                     if (showVibrationAmplitudeDialog) {
                         NumberAlertDialog(
                             title = stringResource(R.string.vibration_amplitude_dialog_title),
-                            defaultValue = vibrationAmplitude.toLong(),
+                            defaultValue = vibrationAmplitude,
                             minValue = 1,
                             maxValue = 255,
                             onDismissRequest = { showVibrationAmplitudeDialog = false },
                             onConfirm = {
-                                vibrationAmplitude = it.toInt()
-                                sharedPreferences.edit().putInt(VIBRATION_AMPLITUDE, it.toInt())
+                                vibrationAmplitude = it
+                                sharedPreferences.edit().putInt(VIBRATION_AMPLITUDE, it)
                                     .apply()
                                 showVibrationAmplitudeDialog = false
                             }
@@ -395,13 +394,13 @@ fun dynamicColorScheme(context: Context): ColorScheme {
 @Composable
 fun NumberAlertDialog(
     title: String,
-    defaultValue: Long,
+    defaultValue: Int,
     onDismissRequest: () -> Unit,
-    onConfirm: (Long) -> Unit,
-    minValue: Long = 0,
-    maxValue: Long = Long.MAX_VALUE,
-    validate: (Long) -> Boolean = { it in minValue..maxValue }
+    onConfirm: (Int) -> Unit,
+    minValue: Int,
+    maxValue: Int
 ) {
+    fun validate(value: Int) = value in minValue..maxValue
     var value by remember { mutableStateOf(defaultValue.toString()) }
     val focusRequester = remember { FocusRequester() }
     AlertDialog(
@@ -414,7 +413,7 @@ fun NumberAlertDialog(
                     onValueChange = { value = it },
                     label = { Text(stringResource(R.string.value_in_range, minValue, maxValue)) },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                    isError = value.toLongOrNull() == null || !validate(value.toLong()),
+                    isError = value.toIntOrNull() == null || !validate(value.toInt()),
                     modifier = Modifier.focusRequester(focusRequester)
                 )
             }
@@ -422,9 +421,9 @@ fun NumberAlertDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    onConfirm(value.toLong())
+                    onConfirm(value.toInt())
                 },
-                enabled = value.toLongOrNull() != null && validate(value.toLong())
+                enabled = value.toLongOrNull() != null && validate(value.toInt())
             ) {
                 Text(text = stringResource(R.string.ok))
             }
