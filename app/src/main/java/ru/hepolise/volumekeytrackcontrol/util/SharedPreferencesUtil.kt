@@ -1,6 +1,7 @@
 package ru.hepolise.volumekeytrackcontrol.util
 
 import android.content.SharedPreferences
+import android.os.Build
 import android.view.ViewConfiguration
 import de.robv.android.xposed.XSharedPreferences
 import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
@@ -13,18 +14,15 @@ object SharedPreferencesUtil {
     const val VIBRATION_AMPLITUDE = "vibrationAmplitude"
     const val LONG_PRESS_DURATION = "longPressDuration"
 
-    const val SELECTED_EFFECT_DEFAULT_VALUE = 0
+    val SELECTED_EFFECT_DEFAULT_VALUE =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) VibrationType.Click.key else VibrationType.Manual.key
     const val VIBRATION_LENGTH_DEFAULT_VALUE = 50
     const val VIBRATION_AMPLITUDE_DEFAULT_VALUE = 128
     val LONG_PRESS_DURATION_DEFAULT_VALUE = ViewConfiguration.getLongPressTimeout()
 
-    fun SharedPreferences?.getSelectedEffect(): Int {
-        val defaultValue = SELECTED_EFFECT_DEFAULT_VALUE
-        return this?.getInt(SELECTED_EFFECT, defaultValue) ?: defaultValue
-    }
-
     fun SharedPreferences?.getVibrationType(): VibrationType {
-        return VibrationType.values[getSelectedEffect()]
+        val defaultValue = SELECTED_EFFECT_DEFAULT_VALUE
+        return VibrationType.fromKey(this?.getString(SELECTED_EFFECT, defaultValue) ?: defaultValue)
     }
 
     fun SharedPreferences?.getVibrationLength(): Int {
