@@ -32,7 +32,7 @@ object VibratorUtil {
         } else {
             this.vibrate(
                 VibrationEffect.createOneShot(
-                    prefs.getVibrationLength(),
+                    prefs.getVibrationLength().toLong(),
                     prefs.getVibrationAmplitude()
                 )
             )

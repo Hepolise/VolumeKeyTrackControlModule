@@ -231,7 +231,7 @@ object VolumeKeyControlModuleHandlers {
         val handler = instance.getHandler()
         handler.postDelayed(
             getRunnable(instance, VOLUME_BOTH_LONG_PRESS),
-            SharedPreferencesUtil.prefs().getLongPressDuration()
+            SharedPreferencesUtil.prefs().getLongPressDuration().toLong()
         )
     }
 
@@ -243,7 +243,7 @@ object VolumeKeyControlModuleHandlers {
                 KeyEvent.KEYCODE_VOLUME_DOWN -> getRunnable(instance, VOLUME_DOWN_LONG_PRESS)
                 else -> return
             },
-            SharedPreferencesUtil.prefs().getLongPressDuration()
+            SharedPreferencesUtil.prefs().getLongPressDuration().toLong()
         )
     }
 

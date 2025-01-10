@@ -31,5 +31,5 @@
     <string name="cancel">Cancel</string>
     <string name="edit">Edit</string>
 
-    <string name="value_in_range">Value in range %d..%d</string>
+    <string name="value_in_range">Value in range %1$d..%2$d</string>
 </resources>
