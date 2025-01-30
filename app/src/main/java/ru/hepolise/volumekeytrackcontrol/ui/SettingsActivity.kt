@@ -381,7 +381,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                             }
                         },
                         dismissButton = {
-                            Button(onClick = { showResetSettingsDialog = false }) {
+                            TextButton(onClick = { showResetSettingsDialog = false }) {
                                 Text(stringResource(R.string.no))
                             }
                         }
@@ -443,7 +443,7 @@ fun NumberAlertDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     onConfirm(value.toInt())
                 },
