@@ -153,11 +153,11 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
                     .padding(12.dp)
                     .verticalScroll(rememberScrollState())
                     .padding(bottom = 48.dp),
@@ -347,23 +347,45 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp)
+                    .padding(end = 16.dp, bottom = 8.dp)
             ) {
                 Spacer(modifier = Modifier.weight(1f))
 
+                var showResetSettingsDialog by remember { mutableStateOf(false) }
                 Button(onClick = {
-                    sharedPreferences.edit().clear().apply()
-                    vibrationType = VibrationType.fromKey(SELECTED_EFFECT_DEFAULT_VALUE)
-                    vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
-                    vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
-                    longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.settings_reset_toast),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showResetSettingsDialog = true
                 }) {
                     Text(stringResource(R.string.settings_reset))
+                }
+
+                if (showResetSettingsDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showResetSettingsDialog = false },
+                        title = { Text(stringResource(R.string.settings_reset)) },
+                        text = { Text(stringResource(R.string.settings_reset_message)) },
+                        confirmButton = {
+                            Button(onClick = {
+                                showResetSettingsDialog = false
+                                sharedPreferences.edit().clear().apply()
+                                vibrationType = VibrationType.fromKey(SELECTED_EFFECT_DEFAULT_VALUE)
+                                vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
+                                vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
+                                longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.settings_reset_toast),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }) {
+                                Text(stringResource(R.string.yes))
+                            }
+                        },
+                        dismissButton = {
+                            Button(onClick = { showResetSettingsDialog = false }) {
+                                Text(stringResource(R.string.no))
+                            }
+                        }
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
