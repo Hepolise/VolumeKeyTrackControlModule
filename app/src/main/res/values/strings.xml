@@ -22,11 +22,15 @@
     <string name="long_press_duration_dialog_title">Long Press Duration</string>
 
     <string name="settings_reset">Reset settings</string>
+    <string name="settings_reset_message">Are you sure you want to reset settings?</string>
     <string name="settings_reset_toast">Settings are reset to default</string>
     <string name="about">About</string>
 
     <string name="module_is_not_enabled">Module is not enabled in LSPosed.\nRestart the app after enabling the module.\nIf you think this is a bug, please</string>
     <string name="open_issue">open an issue</string>
+
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
