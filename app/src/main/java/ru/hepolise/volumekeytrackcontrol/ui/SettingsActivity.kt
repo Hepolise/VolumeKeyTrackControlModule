@@ -447,7 +447,7 @@ fun NumberAlertDialog(
                 onClick = {
                     onConfirm(value.toInt())
                 },
-                enabled = value.toLongOrNull() != null && validate(value.toInt())
+                enabled = value.toIntOrNull() != null && validate(value.toInt())
             ) {
                 Text(text = stringResource(R.string.ok))
             }
