@@ -1,5 +1,7 @@
 package ru.hepolise.volumekeytrackcontrol.ui
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -7,6 +9,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Vibrator
+import android.view.View
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.AnticipateInterpolator
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -73,6 +78,8 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.animation.doOnEnd
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import ru.hepolise.volumekeytrackcontrol.util.Constants
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION_DEFAULT_VALUE
@@ -95,7 +102,34 @@ import ru.hepolise.volumekeytrackcontrolmodule.R
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashscreen = installSplashScreen()
+        var keepSplashScreen = true
         super.onCreate(savedInstanceState)
+        splashscreen.setKeepOnScreenCondition { keepSplashScreen }
+        keepSplashScreen = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            splashScreen.setOnExitAnimationListener { splashScreenView ->
+                val scaleX = ObjectAnimator.ofFloat(splashScreenView, View.SCALE_X, 1f, 0.6f)
+                val scaleY = ObjectAnimator.ofFloat(splashScreenView, View.SCALE_Y, 1f, 0.6f)
+
+                val fadeOut = ObjectAnimator.ofFloat(splashScreenView, View.ALPHA, 1f, 0f)
+
+                scaleX.interpolator = AnticipateInterpolator()
+                scaleY.interpolator = AnticipateInterpolator()
+                fadeOut.interpolator = AccelerateInterpolator()
+
+                val duration = 400L
+                scaleX.duration = duration
+                scaleY.duration = duration
+                fadeOut.duration = duration
+
+                AnimatorSet().apply {
+                    playTogether(scaleX, scaleY, fadeOut)
+                    doOnEnd { splashScreenView.remove() }
+                    start()
+                }
+            }
+        }
         enableEdgeToEdge()
         setContent {
             MaterialTheme(
