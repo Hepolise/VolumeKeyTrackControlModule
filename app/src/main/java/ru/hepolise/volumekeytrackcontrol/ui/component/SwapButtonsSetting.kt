@@ -34,7 +34,7 @@ fun SwapButtonsSetting(
             text = stringResource(R.string.swap_buttons),
             modifier = Modifier.clickable {
                 onValueChange(!isSwapButtons)
-                sharedPreferences.edit().putBoolean(IS_SWAP_BUTTONS, isSwapButtons).apply()
+                sharedPreferences.edit().putBoolean(IS_SWAP_BUTTONS, !isSwapButtons).apply()
             }
         )
     }
