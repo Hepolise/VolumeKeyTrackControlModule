@@ -3,6 +3,7 @@ package ru.hepolise.volumekeytrackcontrol.ui.component
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Vibrator
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
@@ -84,7 +85,8 @@ fun VibrationEffectSetting(
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = effectExpanded)
             },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
+            modifier = Modifier
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
         )
         ExposedDropdownMenu(
             expanded = effectExpanded,
@@ -119,7 +121,10 @@ fun VibrationEffectSetting(
 
         var showManualVibrationLengthDialog by remember { mutableStateOf(false) }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.vibration_length, vibrationLength))
+            Text(
+                text = stringResource(R.string.vibration_length, vibrationLength),
+                modifier = Modifier.clickable { showManualVibrationLengthDialog = true }
+            )
             IconButton(
                 onClick = {
                     showManualVibrationLengthDialog = true
@@ -162,7 +167,10 @@ fun VibrationEffectSetting(
 
         var showVibrationAmplitudeDialog by remember { mutableStateOf(false) }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.vibration_amplitude, vibrationAmplitude))
+            Text(
+                text = stringResource(R.string.vibration_amplitude, vibrationAmplitude),
+                modifier = Modifier.clickable { showVibrationAmplitudeDialog = true }
+            )
             IconButton(
                 onClick = {
                     showVibrationAmplitudeDialog = true

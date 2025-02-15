@@ -1,6 +1,7 @@
 package ru.hepolise.volumekeytrackcontrol.ui.component
 
 import android.content.SharedPreferences
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
@@ -44,7 +45,10 @@ fun LongPressSetting(
 
     var showLongPressTimeoutDialog by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(R.string.long_press_duration, longPressDuration))
+        Text(
+            text = stringResource(R.string.long_press_duration, longPressDuration),
+            modifier = Modifier.clickable { showLongPressTimeoutDialog = true }
+        )
         IconButton(
             onClick = {
                 showLongPressTimeoutDialog = true
