@@ -3,6 +3,7 @@
 
     <string name="vibration_settings">Vibration Settings</string>
     <string name="long_press_settings">Long Press Settings</string>
+    <string name="other_settings">Other Settings</string>
 
     <string name="vibration_effect_click">Click</string>
     <string name="vibration_effect_double_click">Double Click</string>
@@ -20,6 +21,8 @@
 
     <string name="long_press_duration">Long Press Duration: %dms</string>
     <string name="long_press_duration_dialog_title">Long Press Duration</string>
+
+    <string name="swap_buttons">Swap Up/Down buttons for skipping</string>
 
     <string name="settings_reset">Reset settings</string>
     <string name="settings_reset_message">Are you sure you want to reset settings?</string>
