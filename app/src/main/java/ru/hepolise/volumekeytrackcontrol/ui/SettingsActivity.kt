@@ -64,6 +64,7 @@ import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
 import ru.hepolise.volumekeytrackcontrol.util.Constants
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SELECTED_EFFECT_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
@@ -220,6 +221,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                                 vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
                                 vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
                                 longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
+                                isSwapButtons = IS_SWAP_BUTTONS_DEFAULT_VALUE
                                 Toast.makeText(
                                     context,
                                     context.getString(R.string.settings_reset_toast),
