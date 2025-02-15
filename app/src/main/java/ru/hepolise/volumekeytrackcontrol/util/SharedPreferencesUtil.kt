@@ -13,12 +13,14 @@ object SharedPreferencesUtil {
     const val VIBRATION_LENGTH = "vibrationLength"
     const val VIBRATION_AMPLITUDE = "vibrationAmplitude"
     const val LONG_PRESS_DURATION = "longPressDuration"
+    const val IS_SWAP_BUTTONS = "isSwapButtons"
 
     val SELECTED_EFFECT_DEFAULT_VALUE =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) VibrationType.Click.key else VibrationType.Manual.key
     const val VIBRATION_LENGTH_DEFAULT_VALUE = 50
     const val VIBRATION_AMPLITUDE_DEFAULT_VALUE = 128
     val LONG_PRESS_DURATION_DEFAULT_VALUE = ViewConfiguration.getLongPressTimeout()
+    const val IS_SWAP_BUTTONS_DEFAULT_VALUE = false
 
     fun SharedPreferences?.getVibrationType(): VibrationType {
         val defaultValue = SELECTED_EFFECT_DEFAULT_VALUE
@@ -38,6 +40,11 @@ object SharedPreferencesUtil {
     fun SharedPreferences?.getLongPressDuration(): Int {
         val defaultValue = LONG_PRESS_DURATION_DEFAULT_VALUE
         return this?.getInt(LONG_PRESS_DURATION, defaultValue) ?: defaultValue
+    }
+
+    fun SharedPreferences?.isSwapButtons(): Boolean {
+        val defaultValue = IS_SWAP_BUTTONS_DEFAULT_VALUE
+        return this?.getBoolean(IS_SWAP_BUTTONS, defaultValue) ?: defaultValue
     }
 
     fun prefs(): SharedPreferences? {

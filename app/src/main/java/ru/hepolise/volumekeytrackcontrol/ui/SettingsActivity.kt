@@ -55,10 +55,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.ModuleIsNotEnabled
+import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
 import ru.hepolise.volumekeytrackcontrol.util.Constants
@@ -71,6 +73,7 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPress
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibrationType
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrolmodule.R
@@ -134,6 +137,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
     var vibrationType by remember { mutableStateOf(sharedPreferences.getVibrationType()) }
     var vibrationLength by remember { mutableIntStateOf(sharedPreferences.getVibrationLength()) }
     var vibrationAmplitude by remember { mutableIntStateOf(sharedPreferences.getVibrationAmplitude()) }
+    var isSwapButtons by remember { mutableStateOf(sharedPreferences.isSwapButtons()) }
 
     Scaffold(
         topBar = {
@@ -173,7 +177,21 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                     vibrationAmplitude = it.vibrationAmplitude
                 }
 
+
+
+                HorizontalDivider(modifier = Modifier.widthIn(max = 300.dp))
+
+                Text(text = stringResource(R.string.other_settings), fontSize = 20.sp)
+
+                SwapButtonsSetting(
+                    isSwapButtons = isSwapButtons,
+                    sharedPreferences = sharedPreferences
+                ) {
+                    isSwapButtons = it
+                }
+
             }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
