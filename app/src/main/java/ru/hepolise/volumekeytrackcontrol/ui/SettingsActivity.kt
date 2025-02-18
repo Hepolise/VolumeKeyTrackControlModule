@@ -28,35 +28,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -64,39 +51,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
+import ru.hepolise.volumekeytrackcontrol.ui.component.ModuleIsNotEnabled
+import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
+import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
+import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
 import ru.hepolise.volumekeytrackcontrol.util.Constants
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION_DEFAULT_VALUE
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SELECTED_EFFECT
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SELECTED_EFFECT_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE_DEFAULT_VALUE
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibrationType
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
-import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
 import ru.hepolise.volumekeytrackcontrolmodule.R
 
 
@@ -141,26 +121,6 @@ class SettingsActivity : ComponentActivity() {
     }
 }
 
-private val VibrationEffectTitles = VibrationType.values.associateWith {
-    when (it) {
-        VibrationType.Disabled -> R.string.vibration_disabled
-        VibrationType.Manual -> R.string.vibration_manual
-        else -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                when (it) {
-                    VibrationType.Click -> R.string.vibration_effect_click
-                    VibrationType.DoubleClick -> R.string.vibration_effect_double_click
-                    VibrationType.HeavyClick -> R.string.vibration_effect_heavy_click
-                    VibrationType.Tick -> R.string.vibration_effect_tick
-                    else -> throw IllegalStateException("Unknown VibrationType: $it")
-                }
-            } else {
-                throw IllegalStateException("VibrationType is not supported on this API level")
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VibrationSettingsScreen(vibrator: Vibrator?) {
@@ -178,6 +138,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
     var vibrationType by remember { mutableStateOf(sharedPreferences.getVibrationType()) }
     var vibrationLength by remember { mutableIntStateOf(sharedPreferences.getVibrationLength()) }
     var vibrationAmplitude by remember { mutableIntStateOf(sharedPreferences.getVibrationAmplitude()) }
+    var isSwapButtons by remember { mutableStateOf(sharedPreferences.isSwapButtons()) }
 
     Scaffold(
         topBar = {
@@ -199,184 +160,39 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Text(text = stringResource(R.string.long_press_settings), fontSize = 20.sp)
-
-                Slider(
-                    value = longPressDuration.toFloat(),
-                    onValueChange = {
-                        longPressDuration = it.toInt()
-                    },
-                    valueRange = 100f..1000f,
-                    onValueChangeFinished = {
-                        sharedPreferences.edit().putInt(LONG_PRESS_DURATION, longPressDuration)
-                            .apply()
-                    },
-                    modifier = Modifier.widthIn(max = 300.dp)
-                )
-
-                var showLongPressTimeoutDialog by remember { mutableStateOf(false) }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.long_press_duration, longPressDuration))
-                    IconButton(
-                        onClick = {
-                            showLongPressTimeoutDialog = true
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(R.string.edit)
-                        )
-                    }
-                }
-
-                if (showLongPressTimeoutDialog) {
-                    NumberAlertDialog(
-                        title = stringResource(R.string.long_press_duration_dialog_title),
-                        defaultValue = longPressDuration,
-                        minValue = 100,
-                        maxValue = 1000,
-                        onDismissRequest = { showLongPressTimeoutDialog = false },
-                        onConfirm = {
-                            longPressDuration = it
-                            sharedPreferences.edit().putInt(LONG_PRESS_DURATION, it).apply()
-                            showLongPressTimeoutDialog = false
-                        }
-                    )
+                LongPressSetting(longPressDuration, sharedPreferences) {
+                    longPressDuration = it
                 }
 
                 HorizontalDivider(modifier = Modifier.widthIn(max = 300.dp))
 
-                Text(text = stringResource(R.string.vibration_settings), fontSize = 20.sp)
-
-                var effectExpanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = effectExpanded,
-                    onExpandedChange = { effectExpanded = !effectExpanded }
+                VibrationEffectSetting(
+                    value = VibrationSettingData(
+                        vibrationType, vibrationLength, vibrationAmplitude
+                    ),
+                    vibrator = vibrator,
+                    sharedPreferences = sharedPreferences
                 ) {
-                    TextField(
-                        value = stringResource(VibrationEffectTitles[vibrationType]!!),
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = effectExpanded)
-                        },
-                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                    )
-                    ExposedDropdownMenu(
-                        expanded = effectExpanded,
-                        onDismissRequest = { effectExpanded = false }) {
-                        VibrationType.values.forEach { effect ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(VibrationEffectTitles[effect]!!)) },
-                                onClick = {
-                                    vibrationType = effect
-                                    sharedPreferences.edit().putString(SELECTED_EFFECT, effect.key)
-                                        .apply()
-                                    effectExpanded = false
-                                }
-                            )
-                        }
-                    }
+                    vibrationType = it.vibrationType
+                    vibrationLength = it.vibrationLength
+                    vibrationAmplitude = it.vibrationAmplitude
                 }
 
-                if (vibrationType == VibrationType.Manual) {
-                    Slider(
-                        value = vibrationLength.toFloat(),
-                        onValueChange = {
-                            vibrationLength = it.toInt()
-                        },
-                        valueRange = 10f..500f,
-                        onValueChangeFinished = {
-                            sharedPreferences.edit().putInt(VIBRATION_LENGTH, vibrationLength)
-                                .apply()
-                        },
-                        modifier = Modifier.widthIn(max = 300.dp)
-                    )
 
-                    var showManualVibrationLengthDialog by remember { mutableStateOf(false) }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.vibration_length, vibrationLength))
-                        IconButton(
-                            onClick = {
-                                showManualVibrationLengthDialog = true
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = stringResource(R.string.edit)
-                            )
-                        }
-                    }
 
-                    if (showManualVibrationLengthDialog) {
-                        NumberAlertDialog(
-                            title = stringResource(R.string.vibration_length_dialog_title),
-                            defaultValue = vibrationLength,
-                            minValue = 10,
-                            maxValue = 500,
-                            onDismissRequest = { showManualVibrationLengthDialog = false },
-                            onConfirm = {
-                                vibrationLength = it
-                                sharedPreferences.edit().putInt(VIBRATION_LENGTH, it).apply()
-                                showManualVibrationLengthDialog = false
-                            }
-                        )
-                    }
+                HorizontalDivider(modifier = Modifier.widthIn(max = 300.dp))
 
-                    Slider(
-                        value = vibrationAmplitude.toFloat(),
-                        onValueChange = {
-                            vibrationAmplitude = it.toInt()
-                        },
-                        valueRange = 1f..255f,
-                        onValueChangeFinished = {
-                            sharedPreferences.edit().putInt(VIBRATION_AMPLITUDE, vibrationAmplitude)
-                                .apply()
-                        },
-                        modifier = Modifier.widthIn(max = 300.dp)
-                    )
+                Text(text = stringResource(R.string.other_settings), fontSize = 20.sp)
 
-                    var showVibrationAmplitudeDialog by remember { mutableStateOf(false) }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.vibration_amplitude, vibrationAmplitude))
-                        IconButton(
-                            onClick = {
-                                showVibrationAmplitudeDialog = true
-                            }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = stringResource(R.string.edit)
-                            )
-                        }
-                    }
-
-                    if (showVibrationAmplitudeDialog) {
-                        NumberAlertDialog(
-                            title = stringResource(R.string.vibration_amplitude_dialog_title),
-                            defaultValue = vibrationAmplitude,
-                            minValue = 1,
-                            maxValue = 255,
-                            onDismissRequest = { showVibrationAmplitudeDialog = false },
-                            onConfirm = {
-                                vibrationAmplitude = it
-                                sharedPreferences.edit().putInt(VIBRATION_AMPLITUDE, it)
-                                    .apply()
-                                showVibrationAmplitudeDialog = false
-                            }
-                        )
-                    }
-
+                SwapButtonsSetting(
+                    isSwapButtons = isSwapButtons,
+                    sharedPreferences = sharedPreferences
+                ) {
+                    isSwapButtons = it
                 }
 
-                if (vibrationType != VibrationType.Disabled) {
-                    Button(onClick = {
-                        vibrator?.triggerVibration(sharedPreferences)
-                    }) {
-                        Text(stringResource(R.string.test_vibration))
-                    }
-                }
             }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -405,6 +221,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                                 vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
                                 vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
                                 longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
+                                isSwapButtons = IS_SWAP_BUTTONS_DEFAULT_VALUE
                                 Toast.makeText(
                                     context,
                                     context.getString(R.string.settings_reset_toast),
@@ -446,97 +263,6 @@ fun dynamicColorScheme(context: Context): ColorScheme {
         else dynamicLightColorScheme(context)
     } else {
         if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
-    }
-}
-
-@Composable
-fun NumberAlertDialog(
-    title: String,
-    defaultValue: Int,
-    onDismissRequest: () -> Unit,
-    onConfirm: (Int) -> Unit,
-    minValue: Int,
-    maxValue: Int
-) {
-    fun validate(value: Int) = value in minValue..maxValue
-    var value by remember { mutableStateOf(defaultValue.toString()) }
-    val focusRequester = remember { FocusRequester() }
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text(text = title) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = { value = it },
-                    label = { Text(stringResource(R.string.value_in_range, minValue, maxValue)) },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                    isError = value.toIntOrNull() == null || !validate(value.toInt()),
-                    modifier = Modifier.focusRequester(focusRequester)
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onConfirm(value.toInt())
-                },
-                enabled = value.toIntOrNull() != null && validate(value.toInt())
-            ) {
-                Text(text = stringResource(R.string.ok))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = stringResource(R.string.cancel))
-            }
-        },
-    )
-    LaunchedEffect(true) {
-        focusRequester.requestFocus()
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ModuleIsNotEnabled() {
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.app_name)) })
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = buildAnnotatedString {
-                        append(stringResource(id = R.string.module_is_not_enabled))
-                        append(" ")
-                        withLink(
-                            LinkAnnotation.Url(
-                                url = Constants.GITHUB_NEW_ISSUE,
-                                styles = TextLinkStyles(
-                                    style = SpanStyle(
-                                        color = MaterialTheme.colorScheme.primary,
-                                        textDecoration = TextDecoration.Underline
-                                    )
-                                )
-                            )
-                        ) {
-                            append(stringResource(id = R.string.open_issue))
-                        }
-                    }
-                )
-            }
-        }
     }
 }
 

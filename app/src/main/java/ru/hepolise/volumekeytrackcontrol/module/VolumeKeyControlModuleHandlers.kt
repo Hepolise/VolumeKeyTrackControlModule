@@ -16,6 +16,7 @@ import de.robv.android.xposed.XposedHelpers
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
 
@@ -150,17 +151,25 @@ object VolumeKeyControlModuleHandlers {
     }
 
     private fun doHook(keyCode: Int, event: KeyEvent, param: MethodHookParam) {
+        val isSwap = SharedPreferencesUtil.prefs().isSwapButtons()
+        log("isSwap: $isSwap")
+        val isDown = when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_DOWN -> !isSwap
+            KeyEvent.KEYCODE_VOLUME_UP -> isSwap
+            else -> throw IllegalStateException("Unknown key code: $keyCode")
+        }
         when (event.action) {
-            KeyEvent.ACTION_DOWN -> handleDownAction(keyCode, param)
-            KeyEvent.ACTION_UP -> handleUpAction(keyCode, param)
+            KeyEvent.ACTION_DOWN -> handleDownAction(isDown, param)
+            KeyEvent.ACTION_UP -> handleUpAction(isDown, keyCode, param)
         }
         param.setResult(0)
     }
 
-    private fun handleDownAction(keyCode: Int, param: MethodHookParam) {
-        when (keyCode) {
-            KeyEvent.KEYCODE_VOLUME_DOWN -> isDownPressed = true
-            KeyEvent.KEYCODE_VOLUME_UP -> isUpPressed = true
+    private fun handleDownAction(isDown: Boolean, param: MethodHookParam) {
+        if (isDown) {
+            isDownPressed = true
+        } else {
+            isUpPressed = true
         }
         log("down action received, down: $isDownPressed, up: $isUpPressed")
         isLongPress = false
@@ -171,17 +180,18 @@ object VolumeKeyControlModuleHandlers {
             // only one button pressed
             if (isMusicActive()) {
                 log("music is active, creating delayed skip")
-                handleVolumeSkipPress(param.thisObject, keyCode)
+                handleVolumeSkipPress(param.thisObject, isDown)
             }
             log("creating delayed play pause")
             handleVolumePlayPausePress(param.thisObject)
         }
     }
 
-    private fun handleUpAction(keyCode: Int, param: MethodHookParam) {
-        when (keyCode) {
-            KeyEvent.KEYCODE_VOLUME_DOWN -> isDownPressed = false
-            KeyEvent.KEYCODE_VOLUME_UP -> isUpPressed = false
+    private fun handleUpAction(isDown: Boolean, keyCode: Int, param: MethodHookParam) {
+        if (isDown) {
+            isDownPressed = false
+        } else {
+            isUpPressed = false
         }
         log("up action received, down: $isDownPressed, up: $isUpPressed")
         handleVolumeAllPressAbort(param.thisObject)
@@ -235,14 +245,10 @@ object VolumeKeyControlModuleHandlers {
         )
     }
 
-    private fun handleVolumeSkipPress(instance: Any, keyCode: Int) {
+    private fun handleVolumeSkipPress(instance: Any, isDown: Boolean) {
         val handler = instance.getHandler()
         handler.postDelayed(
-            when (keyCode) {
-                KeyEvent.KEYCODE_VOLUME_UP -> getRunnable(instance, VOLUME_UP_LONG_PRESS)
-                KeyEvent.KEYCODE_VOLUME_DOWN -> getRunnable(instance, VOLUME_DOWN_LONG_PRESS)
-                else -> return
-            },
+            getRunnable(instance, if (isDown) VOLUME_DOWN_LONG_PRESS else VOLUME_UP_LONG_PRESS),
             SharedPreferencesUtil.prefs().getLongPressDuration().toLong()
         )
     }
