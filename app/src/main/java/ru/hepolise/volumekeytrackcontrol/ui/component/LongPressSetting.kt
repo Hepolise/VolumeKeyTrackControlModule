@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION
 import ru.hepolise.volumekeytrackcontrolmodule.R
 
@@ -37,8 +38,9 @@ fun LongPressSetting(
         onValueChange = { onValueChange(it.toInt()) },
         valueRange = 100f..1000f,
         onValueChangeFinished = {
-            sharedPreferences.edit().putInt(LONG_PRESS_DURATION, longPressDuration)
-                .apply()
+            sharedPreferences.edit {
+                putInt(LONG_PRESS_DURATION, longPressDuration)
+            }
         },
         modifier = Modifier.widthIn(max = 300.dp)
     )
@@ -70,7 +72,7 @@ fun LongPressSetting(
             onDismissRequest = { showLongPressTimeoutDialog = false },
             onConfirm = {
                 onValueChange(it)
-                sharedPreferences.edit().putInt(LONG_PRESS_DURATION, it).apply()
+                sharedPreferences.edit { putInt(LONG_PRESS_DURATION, it) }
                 showLongPressTimeoutDialog = false
             }
         )

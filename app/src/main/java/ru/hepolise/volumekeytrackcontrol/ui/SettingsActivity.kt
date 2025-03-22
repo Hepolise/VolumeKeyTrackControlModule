@@ -5,7 +5,6 @@ import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Vibrator
@@ -57,6 +56,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.animation.doOnEnd
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.ModuleIsNotEnabled
@@ -128,7 +129,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
 
     @SuppressLint("WorldReadableFiles") @Suppress("DEPRECATION")
     val sharedPreferences = try {
-        context.getSharedPreferences(SETTINGS_PREFS_NAME, Context.MODE_WORLD_READABLE)
+        context.getSharedPreferences(SETTINGS_PREFS_NAME, Context.MODE_PRIVATE)
     } catch (e: SecurityException) {
         ModuleIsNotEnabled()
         return
@@ -216,7 +217,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
                         confirmButton = {
                             Button(onClick = {
                                 showResetSettingsDialog = false
-                                sharedPreferences.edit().clear().apply()
+                                sharedPreferences.edit { clear() }
                                 vibrationType = VibrationType.fromKey(SELECTED_EFFECT_DEFAULT_VALUE)
                                 vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
                                 vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
@@ -243,7 +244,7 @@ fun VibrationSettingsScreen(vibrator: Vibrator?) {
 
                 Button(onClick = {
                     val intent = Intent(Intent.ACTION_VIEW)
-                    intent.data = Uri.parse(Constants.GITHUB_URL)
+                    intent.data = Constants.GITHUB_URL.toUri()
                     context.startActivity(intent)
                 }) {
                     Text(stringResource(R.string.about))

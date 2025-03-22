@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SELECTED_EFFECT
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH
@@ -96,8 +97,9 @@ fun VibrationEffectSetting(
                     text = { Text(stringResource(VibrationEffectTitles[effect]!!)) },
                     onClick = {
                         onValueChange(value.copy(vibrationType = effect))
-                        sharedPreferences.edit().putString(SELECTED_EFFECT, effect.key)
-                            .apply()
+                        sharedPreferences.edit {
+                            putString(SELECTED_EFFECT, effect.key)
+                        }
                         effectExpanded = false
                     }
                 )
@@ -113,8 +115,9 @@ fun VibrationEffectSetting(
             },
             valueRange = 10f..500f,
             onValueChangeFinished = {
-                sharedPreferences.edit().putInt(VIBRATION_LENGTH, vibrationLength)
-                    .apply()
+                sharedPreferences.edit {
+                    putInt(VIBRATION_LENGTH, vibrationLength)
+                }
             },
             modifier = Modifier.widthIn(max = 300.dp)
         )
@@ -146,7 +149,7 @@ fun VibrationEffectSetting(
                 onDismissRequest = { showManualVibrationLengthDialog = false },
                 onConfirm = {
                     onValueChange(value.copy(vibrationLength = it))
-                    sharedPreferences.edit().putInt(VIBRATION_LENGTH, it).apply()
+                    sharedPreferences.edit { putInt(VIBRATION_LENGTH, it) }
                     showManualVibrationLengthDialog = false
                 }
             )
@@ -159,8 +162,9 @@ fun VibrationEffectSetting(
             },
             valueRange = 1f..255f,
             onValueChangeFinished = {
-                sharedPreferences.edit().putInt(VIBRATION_AMPLITUDE, vibrationAmplitude)
-                    .apply()
+                sharedPreferences.edit {
+                    putInt(VIBRATION_AMPLITUDE, vibrationAmplitude)
+                }
             },
             modifier = Modifier.widthIn(max = 300.dp)
         )
@@ -192,8 +196,9 @@ fun VibrationEffectSetting(
                 onDismissRequest = { showVibrationAmplitudeDialog = false },
                 onConfirm = {
                     onValueChange(value.copy(vibrationAmplitude = it))
-                    sharedPreferences.edit().putInt(VIBRATION_AMPLITUDE, it)
-                        .apply()
+                    sharedPreferences.edit {
+                        putInt(VIBRATION_AMPLITUDE, it)
+                    }
                     showVibrationAmplitudeDialog = false
                 }
             )

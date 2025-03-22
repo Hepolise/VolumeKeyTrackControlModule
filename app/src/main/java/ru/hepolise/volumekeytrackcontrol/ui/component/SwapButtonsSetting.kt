@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS
 import ru.hepolise.volumekeytrackcontrolmodule.R
 
@@ -26,7 +27,7 @@ fun SwapButtonsSetting(
             checked = isSwapButtons,
             onCheckedChange = {
                 onValueChange(it)
-                sharedPreferences.edit().putBoolean(IS_SWAP_BUTTONS, it).apply()
+                sharedPreferences.edit { putBoolean(IS_SWAP_BUTTONS, it) }
             }
         )
         Spacer(modifier = Modifier.width(4.dp))
@@ -34,7 +35,7 @@ fun SwapButtonsSetting(
             text = stringResource(R.string.swap_buttons),
             modifier = Modifier.clickable {
                 onValueChange(!isSwapButtons)
-                sharedPreferences.edit().putBoolean(IS_SWAP_BUTTONS, !isSwapButtons).apply()
+                sharedPreferences.edit { putBoolean(IS_SWAP_BUTTONS, !isSwapButtons) }
             }
         )
     }
