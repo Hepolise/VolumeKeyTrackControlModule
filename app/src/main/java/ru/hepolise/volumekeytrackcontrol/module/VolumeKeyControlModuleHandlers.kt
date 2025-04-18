@@ -15,6 +15,8 @@ import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
@@ -72,7 +74,7 @@ object VolumeKeyControlModuleHandlers {
                     if (isUpPressed && isDownPressed) {
                         log("sending play/pause")
                         isLongPress = true
-                        getActiveMediaController()?.transportControls?.also {
+                        getMediaController()?.transportControls?.also {
                             sendMediaButtonEventAndTriggerVibration(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                         }
                     } else {
@@ -178,7 +180,7 @@ object VolumeKeyControlModuleHandlers {
             handleVolumeSkipPressAbort(param.thisObject)
         } else {
             // only one button pressed
-            if (isMusicActive()) {
+            if (getMediaController()?.isMusicActive() == true) {
                 log("music is active, creating delayed skip")
                 handleVolumeSkipPress(param.thisObject, isDown)
             }
@@ -195,7 +197,7 @@ object VolumeKeyControlModuleHandlers {
         }
         log("up action received, down: $isDownPressed, up: $isUpPressed")
         handleVolumeAllPressAbort(param.thisObject)
-        if (!isLongPress && isMusicActive()) {
+        if (!isLongPress && getMediaController()?.isMusicActive() == true) {
             log("adjusting music volume")
             val direction = when (keyCode) {
                 KeyEvent.KEYCODE_VOLUME_UP -> AudioManager.ADJUST_RAISE
@@ -206,27 +208,47 @@ object VolumeKeyControlModuleHandlers {
         }
     }
 
-    private fun hasActiveMediaController() = getActiveMediaController() != null
-
-    private fun getActiveMediaController(): MediaController? {
-        return mediaControllers?.firstOrNull()?.also { log("chosen media controller: ${it.packageName}") }
+    private fun hasActiveMediaController(): Boolean {
+        val first = getFirstMediaController()
+        val active = getMediaController()
+        if (first != active && first != null) {
+            return !first.isMusicActive()
+        }
+        return active != null
     }
 
-    private fun isMusicActive() = getActiveMediaController()?.let {
-        when (it.playbackState?.state) {
-            PlaybackState.STATE_PLAYING,
-            PlaybackState.STATE_FAST_FORWARDING,
-            PlaybackState.STATE_REWINDING,
-            PlaybackState.STATE_BUFFERING -> true
-            else -> false
-        }
-    } ?: false
+    private fun getFirstMediaController(): MediaController? {
+        return mediaControllers?.firstOrNull()
+            ?.also { log("first media controller: ${it.packageName}") }
+    }
+
+    private fun getMediaController(): MediaController? {
+        return mediaControllers?.find {
+            val filterType = SharedPreferencesUtil.prefs().getAppFilterType()
+            val apps = SharedPreferencesUtil.prefs().getApps(filterType)
+            when (filterType) {
+                SharedPreferencesUtil.AppFilterType.Disabled -> true
+                SharedPreferencesUtil.AppFilterType.WhiteList -> it.packageName in apps
+                SharedPreferencesUtil.AppFilterType.BlackList -> it.packageName !in apps
+            }
+        }?.also { log("chosen media controller: ${it.packageName}") }
+    }
+
+    private fun MediaController.isMusicActive() = when (playbackState?.state) {
+        PlaybackState.STATE_PLAYING,
+        PlaybackState.STATE_FAST_FORWARDING,
+        PlaybackState.STATE_REWINDING,
+        PlaybackState.STATE_BUFFERING -> true
+
+        else -> false
+    }
 
     private fun sendMediaButtonEventAndTriggerVibration(keyCode: Int) {
-        getActiveMediaController()?.transportControls?.also { controls ->
+        getMediaController()?.also { controller ->
+            val controls = controller.transportControls
             when (keyCode) {
                 KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                    if (isMusicActive()) controls.pause() else controls.play()
+                    if (controller.isMusicActive()) controls.pause() else controls.play()
                 }
 
                 KeyEvent.KEYCODE_MEDIA_NEXT -> controls.skipToNext()

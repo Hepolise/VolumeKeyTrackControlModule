@@ -48,6 +48,12 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.3.2")
     implementation("androidx.core:core-splashscreen:1.0.1")
 
+    // Compose navigation
+    implementation("androidx.navigation:navigation-compose:2.8.9")
+
+    // Coil
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
     // Required for preview support
     debugImplementation("androidx.compose.ui:ui-tooling")
 
