@@ -206,7 +206,9 @@ fun AppFilterScreen(
     val filteredApps by remember(apps, debouncedQuery) {
         derivedStateOf {
             apps.filter { app ->
-                app.name.contains(debouncedQuery, ignoreCase = true)
+                debouncedQuery.isEmpty() || listOf(app.name, app.packageName).any {
+                    it.contains(debouncedQuery, ignoreCase = true)
+                }
             }
         }
     }
