@@ -15,6 +15,8 @@ import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
@@ -209,7 +211,15 @@ object VolumeKeyControlModuleHandlers {
     private fun hasActiveMediaController() = getActiveMediaController() != null
 
     private fun getActiveMediaController(): MediaController? {
-        return mediaControllers?.firstOrNull()?.also { log("chosen media controller: ${it.packageName}") }
+        return mediaControllers?.find {
+            val filterType = SharedPreferencesUtil.prefs().getAppFilterType()
+            val apps = SharedPreferencesUtil.prefs().getApps(filterType)
+            when (filterType) {
+                SharedPreferencesUtil.AppFilterType.Disabled -> true
+                SharedPreferencesUtil.AppFilterType.WhiteList -> it.packageName in apps
+                SharedPreferencesUtil.AppFilterType.BlackList -> it.packageName !in apps
+            }
+        }?.also { log("chosen media controller: ${it.packageName}") }
     }
 
     private fun isMusicActive() = getActiveMediaController()?.let {
@@ -220,7 +230,7 @@ object VolumeKeyControlModuleHandlers {
             PlaybackState.STATE_BUFFERING -> true
             else -> false
         }
-    } ?: false
+    } == true
 
     private fun sendMediaButtonEventAndTriggerVibration(keyCode: Int) {
         getActiveMediaController()?.transportControls?.also { controls ->

@@ -30,7 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SELECTED_EFFECT
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.EFFECT
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH
 import ru.hepolise.volumekeytrackcontrol.util.VibrationType
@@ -98,7 +98,7 @@ fun VibrationEffectSetting(
                     onClick = {
                         onValueChange(value.copy(vibrationType = effect))
                         sharedPreferences.edit {
-                            putString(SELECTED_EFFECT, effect.key)
+                            putString(EFFECT, effect.key)
                         }
                         effectExpanded = false
                     }

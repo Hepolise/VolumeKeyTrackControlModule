@@ -63,7 +63,7 @@ fun NumberAlertDialog(
             }
         },
     )
-    LaunchedEffect(true) {
+    LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
 }
