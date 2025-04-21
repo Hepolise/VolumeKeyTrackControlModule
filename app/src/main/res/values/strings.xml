@@ -19,6 +19,27 @@
     <string name="vibration_amplitude_dialog_title">Vibration Amplitude</string>
     <string name="test_vibration">Test Vibration</string>
 
+    <string name="app_filter">App Filter</string>
+    <string name="manage_apps">Manage %1$s Apps</string>
+    <string name="app_filter_disabled">Disabled</string>
+    <string name="app_filter_white_list">White List</string>
+    <string name="app_filter_black_list">Black List</string>
+
+    <string name="search_apps">Search apps</string>
+    <string name="clear_search">Clear Search</string>
+    <string name="app_icon">App Icon</string>
+    <string name="select_apps_for">Select apps for %1$s</string>
+    <string name="max_apps_limit">You can only select up to %1$d apps.</string>
+    <string name="clear">Clear</string>
+    <plurals name="app_filter_clear_apps">
+        <item quantity="one">Clear 1 app</item>
+        <item quantity="other">Clear %d apps</item>
+    </plurals>
+    <plurals name="app_filter_clear_message">
+        <item quantity="one">Are you sure you want to clear 1 app?</item>
+        <item quantity="other">Are you sure you want to clear %d apps?</item>
+    </plurals>
+
     <string name="long_press_duration">Long Press Duration: %dms</string>
     <string name="long_press_duration_dialog_title">Long Press Duration</string>
 
@@ -31,6 +52,8 @@
 
     <string name="module_is_not_enabled">Module is not enabled in LSPosed.\nRestart the app after enabling the module.\nIf you think this is a bug, please</string>
     <string name="open_issue">open an issue</string>
+
+    <string name="back">Back</string>
 
     <string name="yes">Yes</string>
     <string name="no">No</string>
