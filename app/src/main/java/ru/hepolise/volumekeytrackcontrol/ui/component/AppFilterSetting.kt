@@ -1,6 +1,14 @@
 package ru.hepolise.volumekeytrackcontrol.ui.component
 
 import android.content.SharedPreferences
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -14,20 +22,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.APP_FILTER_TYPE
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.AppFilterType
 import ru.hepolise.volumekeytrackcontrolmodule.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppFilterSetting(
-    value: SharedPreferencesUtil.AppFilterType,
+    value: AppFilterType,
     sharedPreferences: SharedPreferences,
-    onValueChange: (SharedPreferencesUtil.AppFilterType) -> Unit,
+    onValueChange: (AppFilterType) -> Unit,
     onNavigateToAppFilter: () -> Unit
 ) {
     Text(text = stringResource(R.string.app_filter), fontSize = 20.sp)
@@ -51,7 +60,7 @@ fun AppFilterSetting(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }) {
-            SharedPreferencesUtil.AppFilterType.values.forEach { type ->
+            AppFilterType.values.forEach { type ->
                 DropdownMenuItem(
                     text = { Text(stringResource(type.resourceId)) },
                     onClick = {
@@ -66,11 +75,27 @@ fun AppFilterSetting(
         }
     }
 
-    if (value == SharedPreferencesUtil.AppFilterType.WhiteList || value == SharedPreferencesUtil.AppFilterType.BlackList) {
-        Button(
-            onClick = onNavigateToAppFilter,
+    Box {
+        AnimatedVisibility(
+            visible = value == AppFilterType.WhiteList || value == AppFilterType.BlackList,
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = stringResource(R.string.manage_apps, stringResource(value.resourceId)))
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Button(
+                    onClick = onNavigateToAppFilter,
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.manage_apps,
+                            stringResource(value.resourceId)
+                        )
+                    )
+                }
+            }
         }
     }
 }

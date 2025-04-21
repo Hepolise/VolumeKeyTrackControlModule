@@ -3,8 +3,16 @@ package ru.hepolise.volumekeytrackcontrol.ui.component
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Vibrator
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -107,110 +115,124 @@ fun VibrationEffectSetting(
         }
     }
 
-    if (vibrationType == VibrationType.Manual) {
-        Slider(
-            value = vibrationLength.toFloat(),
-            onValueChange = {
-                onValueChange(value.copy(vibrationLength = it.toInt()))
-            },
-            valueRange = 10f..500f,
-            onValueChangeFinished = {
-                sharedPreferences.edit {
-                    putInt(VIBRATION_LENGTH, vibrationLength)
-                }
-            },
-            modifier = Modifier.widthIn(max = 300.dp)
-        )
-
-        var showManualVibrationLengthDialog by remember { mutableStateOf(false) }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(R.string.vibration_length, vibrationLength),
-                modifier = Modifier.clickable { showManualVibrationLengthDialog = true }
-            )
-            IconButton(
-                onClick = {
-                    showManualVibrationLengthDialog = true
-                }
+    Box {
+        AnimatedVisibility(
+            visible = vibrationType != VibrationType.Disabled,
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = stringResource(R.string.edit)
-                )
-            }
-        }
+                AnimatedVisibility(
+                    visible = vibrationType == VibrationType.Manual,
+                    enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Slider(
+                            value = vibrationLength.toFloat(),
+                            onValueChange = {
+                                onValueChange(value.copy(vibrationLength = it.toInt()))
+                            },
+                            valueRange = 10f..500f,
+                            onValueChangeFinished = {
+                                sharedPreferences.edit {
+                                    putInt(VIBRATION_LENGTH, vibrationLength)
+                                }
+                            },
+                            modifier = Modifier.widthIn(max = 300.dp)
+                        )
 
-        if (showManualVibrationLengthDialog) {
-            NumberAlertDialog(
-                title = stringResource(R.string.vibration_length_dialog_title),
-                defaultValue = vibrationLength,
-                minValue = 10,
-                maxValue = 500,
-                onDismissRequest = { showManualVibrationLengthDialog = false },
-                onConfirm = {
-                    onValueChange(value.copy(vibrationLength = it))
-                    sharedPreferences.edit { putInt(VIBRATION_LENGTH, it) }
-                    showManualVibrationLengthDialog = false
-                }
-            )
-        }
+                        var showManualVibrationLengthDialog by remember { mutableStateOf(false) }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = stringResource(R.string.vibration_length, vibrationLength),
+                                modifier = Modifier.clickable {
+                                    showManualVibrationLengthDialog = true
+                                }
+                            )
+                            IconButton(onClick = { showManualVibrationLengthDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = stringResource(R.string.edit)
+                                )
+                            }
+                        }
 
-        Slider(
-            value = vibrationAmplitude.toFloat(),
-            onValueChange = {
-                onValueChange(value.copy(vibrationAmplitude = it.toInt()))
-            },
-            valueRange = 1f..255f,
-            onValueChangeFinished = {
-                sharedPreferences.edit {
-                    putInt(VIBRATION_AMPLITUDE, vibrationAmplitude)
-                }
-            },
-            modifier = Modifier.widthIn(max = 300.dp)
-        )
+                        if (showManualVibrationLengthDialog) {
+                            NumberAlertDialog(
+                                title = stringResource(R.string.vibration_length_dialog_title),
+                                defaultValue = vibrationLength,
+                                minValue = 10,
+                                maxValue = 500,
+                                onDismissRequest = { showManualVibrationLengthDialog = false },
+                                onConfirm = {
+                                    onValueChange(value.copy(vibrationLength = it))
+                                    sharedPreferences.edit { putInt(VIBRATION_LENGTH, it) }
+                                    showManualVibrationLengthDialog = false
+                                }
+                            )
+                        }
 
-        var showVibrationAmplitudeDialog by remember { mutableStateOf(false) }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(R.string.vibration_amplitude, vibrationAmplitude),
-                modifier = Modifier.clickable { showVibrationAmplitudeDialog = true }
-            )
-            IconButton(
-                onClick = {
-                    showVibrationAmplitudeDialog = true
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = stringResource(R.string.edit)
-                )
-            }
-        }
+                        Slider(
+                            value = vibrationAmplitude.toFloat(),
+                            onValueChange = {
+                                onValueChange(value.copy(vibrationAmplitude = it.toInt()))
+                            },
+                            valueRange = 1f..255f,
+                            onValueChangeFinished = {
+                                sharedPreferences.edit {
+                                    putInt(VIBRATION_AMPLITUDE, vibrationAmplitude)
+                                }
+                            },
+                            modifier = Modifier.widthIn(max = 300.dp)
+                        )
 
-        if (showVibrationAmplitudeDialog) {
-            NumberAlertDialog(
-                title = stringResource(R.string.vibration_amplitude_dialog_title),
-                defaultValue = vibrationAmplitude,
-                minValue = 1,
-                maxValue = 255,
-                onDismissRequest = { showVibrationAmplitudeDialog = false },
-                onConfirm = {
-                    onValueChange(value.copy(vibrationAmplitude = it))
-                    sharedPreferences.edit {
-                        putInt(VIBRATION_AMPLITUDE, it)
+                        var showVibrationAmplitudeDialog by remember { mutableStateOf(false) }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = stringResource(
+                                    R.string.vibration_amplitude,
+                                    vibrationAmplitude
+                                ),
+                                modifier = Modifier.clickable {
+                                    showVibrationAmplitudeDialog = true
+                                }
+                            )
+                            IconButton(onClick = { showVibrationAmplitudeDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = stringResource(R.string.edit)
+                                )
+                            }
+                        }
+
+                        if (showVibrationAmplitudeDialog) {
+                            NumberAlertDialog(
+                                title = stringResource(R.string.vibration_amplitude_dialog_title),
+                                defaultValue = vibrationAmplitude,
+                                minValue = 1,
+                                maxValue = 255,
+                                onDismissRequest = { showVibrationAmplitudeDialog = false },
+                                onConfirm = {
+                                    onValueChange(value.copy(vibrationAmplitude = it))
+                                    sharedPreferences.edit {
+                                        putInt(VIBRATION_AMPLITUDE, it)
+                                    }
+                                    showVibrationAmplitudeDialog = false
+                                }
+                            )
+                        }
                     }
-                    showVibrationAmplitudeDialog = false
                 }
-            )
-        }
 
-    }
-
-    if (vibrationType != VibrationType.Disabled) {
-        Button(onClick = {
-            vibrator?.triggerVibration(sharedPreferences)
-        }) {
-            Text(stringResource(R.string.test_vibration))
+                Button(onClick = { vibrator?.triggerVibration(sharedPreferences) }) {
+                    Text(stringResource(R.string.test_vibration))
+                }
+            }
         }
     }
+
 }
