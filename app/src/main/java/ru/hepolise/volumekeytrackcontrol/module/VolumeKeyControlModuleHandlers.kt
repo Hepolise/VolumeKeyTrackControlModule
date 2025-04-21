@@ -180,7 +180,7 @@ object VolumeKeyControlModuleHandlers {
             handleVolumeSkipPressAbort(param.thisObject)
         } else {
             // only one button pressed
-            if (getMediaController()?.isMusicActive() == true) {
+            if (getMediaController().isMusicActive()) {
                 log("music is active, creating delayed skip")
                 handleVolumeSkipPress(param.thisObject, isDown)
             }
@@ -197,7 +197,7 @@ object VolumeKeyControlModuleHandlers {
         }
         log("up action received, down: $isDownPressed, up: $isUpPressed")
         handleVolumeAllPressAbort(param.thisObject)
-        if (!isLongPress && getMediaController()?.isMusicActive() == true) {
+        if (!isLongPress && getMediaController().isMusicActive()) {
             log("adjusting music volume")
             val direction = when (keyCode) {
                 KeyEvent.KEYCODE_VOLUME_UP -> AudioManager.ADJUST_RAISE
@@ -223,9 +223,10 @@ object VolumeKeyControlModuleHandlers {
     }
 
     private fun getMediaController(): MediaController? {
+        val prefs = SharedPreferencesUtil.prefs()
         return mediaControllers?.find {
-            val filterType = SharedPreferencesUtil.prefs().getAppFilterType()
-            val apps = SharedPreferencesUtil.prefs().getApps(filterType)
+            val filterType = prefs.getAppFilterType()
+            val apps = prefs.getApps(filterType)
             when (filterType) {
                 SharedPreferencesUtil.AppFilterType.Disabled -> true
                 SharedPreferencesUtil.AppFilterType.WhiteList -> it.packageName in apps
@@ -234,7 +235,7 @@ object VolumeKeyControlModuleHandlers {
         }?.also { log("chosen media controller: ${it.packageName}") }
     }
 
-    private fun MediaController.isMusicActive() = when (playbackState?.state) {
+    private fun MediaController?.isMusicActive() = when (this?.playbackState?.state) {
         PlaybackState.STATE_PLAYING,
         PlaybackState.STATE_FAST_FORWARDING,
         PlaybackState.STATE_REWINDING,
