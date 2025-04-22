@@ -299,7 +299,7 @@ fun AppFilterScreen(
                             items(
                                 items = filteredApps,
                                 key = { it.packageName },
-                                contentType = { it.packageName }
+                                contentType = { "App" }
                             ) { app ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
