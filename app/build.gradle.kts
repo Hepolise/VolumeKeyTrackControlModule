@@ -39,7 +39,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
 
     // Compose BOM (Bill of Materials)
-    implementation(platform("androidx.compose:compose-bom:2025.04.01"))
+    implementation(platform("androidx.compose:compose-bom:2025.05.00"))
 
     // Compose dependencies
     implementation("androidx.activity:activity-compose:1.10.1")
