@@ -39,7 +39,8 @@ fun ModuleIsNotEnabled() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -49,7 +50,7 @@ fun ModuleIsNotEnabled() {
                         append(" ")
                         withLink(
                             LinkAnnotation.Url(
-                                url = Constants.GITHUB_NEW_ISSUE,
+                                url = Constants.LSPOSED_GITHUB_URL,
                                 styles = TextLinkStyles(
                                     style = SpanStyle(
                                         color = MaterialTheme.colorScheme.primary,
@@ -58,7 +59,7 @@ fun ModuleIsNotEnabled() {
                                 )
                             )
                         ) {
-                            append(stringResource(id = R.string.open_issue))
+                            append(stringResource(id = R.string.recommended_lsposed_version))
                         }
                     }
                 )
