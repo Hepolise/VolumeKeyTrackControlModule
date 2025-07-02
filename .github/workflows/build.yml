@@ -27,7 +27,7 @@ env:
   BUILD_TYPE: ${{ inputs.build-type || 'debug' }}
   APK_DIR: app/build/outputs/apk
   APK_NAME: VolumeKeyTrackControlModule
-  IS_EXTERNAL_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+  SHOULD_SIGN: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) }}
 
 jobs:
   build:
@@ -71,17 +71,17 @@ jobs:
           echo 'BUILD_TYPE: ${{ env.BUILD_TYPE }}'
           echo 'ASSEMBLE_TYPE: ${{ env.ASSEMBLE_TYPE }}'
           echo 'VERSION: ${{ env.VERSION }}'
-          echo 'IS_EXTERNAL_PR: ${{ env.IS_EXTERNAL_PR }}'
+          echo 'SHOULD_SIGN: ${{ env.SHOULD_SIGN }}'
 
       - name: Build APK
         run: ./gradlew app:${{ env.ASSEMBLE_TYPE }} --build-cache
 
       - name: Rename release apk
-        if: ${{ env.BUILD_TYPE == 'release' && !env.IS_EXTERNAL_PR }}
+        if: ${{ env.BUILD_TYPE == 'release' && env.SHOULD_SIGN }}
         run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-release-unsigned.apk ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}.apk
 
       - name: Sign app APK
-        if: ${{ env.BUILD_TYPE == 'release' && !env.IS_EXTERNAL_PR }}
+        if: ${{ env.BUILD_TYPE == 'release' && env.SHOULD_SIGN }}
         uses: kevin-david/zipalign-sign-android-release@main
         id: sign_app
         with:
@@ -91,13 +91,15 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Rename signed APK
-        if: ${{ !env.IS_EXTERNAL_PR }}
-        run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}-signed.apk ${{ env.APK_NAME }}-${{ env.BUILD_TYPE }}-${{ env.VERSION }}.apk
-
-      - name: Rename unsigned APK for external PR
-        if: ${{ env.IS_EXTERNAL_PR }}
-        run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}.apk ${{ env.APK_NAME }}-${{ env.BUILD_TYPE }}-${{ env.VERSION }}-unsigned.apk
+      - name: Rename final APK
+        run: |
+          if [ "${{ env.BUILD_TYPE }}" = "release" ] && [ "${{ env.SHOULD_SIGN }}" = "true" ]; then
+            mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}-signed.apk ${{ env.APK_NAME }}-${{ env.BUILD_TYPE }}-${{ env.VERSION }}.apk
+          elif [ "${{ env.BUILD_TYPE }}" = "release" ]; then
+            mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-release-unsigned.apk ${{ env.APK_NAME }}-${{ env.BUILD_TYPE }}-${{ env.VERSION }}-unsigned.apk
+          else
+            mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}.apk ${{ env.APK_NAME }}-${{ env.BUILD_TYPE }}-${{ env.VERSION }}.apk
+          fi
 
       - name: Upload
         uses: actions/upload-artifact@v4
