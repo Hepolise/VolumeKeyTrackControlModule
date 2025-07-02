@@ -64,12 +64,18 @@ jobs:
           else
               echo "ASSEMBLE_TYPE=assembleRelease" >> "$GITHUB_ENV"
           fi
+          if [[ -n "${{ secrets.KEYSTORE }}" ]]; then
+              echo "SIGNING_ENABLED=true" >> "$GITHUB_ENV"
+          else
+              echo "SIGNING_ENABLED=false" >> "$GITHUB_ENV"
+          fi
 
       - name: Print env variables
         run: |
           echo 'BUILD_TYPE: ${{ env.BUILD_TYPE }}'
           echo 'ASSEMBLE_TYPE: ${{ env.ASSEMBLE_TYPE }}'
           echo 'VERSION: ${{ env.VERSION }}'
+          echo 'SIGNING_ENABLED: ${{ env.SIGNING_ENABLED }}'
 
       - name: Build APK
         run: ./gradlew app:${{ env.ASSEMBLE_TYPE }} --build-cache
@@ -79,7 +85,7 @@ jobs:
         run: mv ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-release-unsigned.apk ${{ env.APK_DIR }}/${{ env.BUILD_TYPE }}/app-${{ env.BUILD_TYPE }}.apk
 
       - name: Sign app APK
-        if: ${{ secrets.KEYSTORE != '' }}
+        if: env.SIGNING_ENABLED == 'true'
         uses: kevin-david/zipalign-sign-android-release@main
         id: sign_app
         with:
