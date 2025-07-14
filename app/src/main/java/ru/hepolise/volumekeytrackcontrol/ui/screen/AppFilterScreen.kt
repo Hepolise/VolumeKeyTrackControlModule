@@ -2,7 +2,6 @@ package ru.hepolise.volumekeytrackcontrol.ui.screen
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -62,7 +61,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -100,11 +98,11 @@ import androidx.core.content.edit
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import ru.hepolise.volumekeytrackcontrol.ui.debounce
+import ru.hepolise.volumekeytrackcontrol.ui.model.AppInfo
+import ru.hepolise.volumekeytrackcontrol.ui.viewmodel.AppFilterViewModel
 import ru.hepolise.volumekeytrackcontrol.ui.viewmodel.AppIconViewModel
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.BLACK_LIST_APPS
@@ -123,14 +121,15 @@ fun AppFilterScreen(
     filterType: SharedPreferencesUtil.AppFilterType,
     sharedPreferences: SharedPreferences,
     navController: NavController? = null,
-    viewModel: AppIconViewModel = viewModel(),
+    viewModel: AppFilterViewModel = viewModel(),
+    iconViewModel: AppIconViewModel = viewModel(),
 ) {
     val context = LocalContext.current
-    val iconMap by viewModel.iconMap.collectAsState()
+    val iconMap by iconViewModel.iconMap.collectAsState()
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
-
-    var isRefreshing by remember { mutableStateOf(false) }
+    val apps by viewModel.apps.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     val debouncedQuery by remember(searchQuery) {
@@ -139,7 +138,6 @@ fun AppFilterScreen(
         }.debounce(300, scope)
     }
 
-    var apps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     val selectedApps = remember { mutableStateListOf<String>() }
 
     val appState by remember {
@@ -182,20 +180,13 @@ fun AppFilterScreen(
     val buttonContainerColor = MaterialTheme.colorScheme.primary
     val buttonContentColor = MaterialTheme.colorScheme.onPrimary
 
-    val onRefresh: () -> Unit = {
-        isRefreshing = true
-        apps = emptyList()
-        scope.launch {
-            apps = withContext(Dispatchers.IO) {
-                getAllApps(context)
-            }
-            isRefreshing = false
-        }
+    val onRefresh: (Boolean) -> Unit = { refresh ->
+        viewModel.loadApps(context, refresh)
     }
 
     LaunchedEffect(Unit) {
         selectedApps.addAll(sharedPreferences.getApps(filterType))
-        onRefresh()
+        onRefresh(false)
     }
 
     fun saveApps() {
@@ -358,7 +349,7 @@ fun AppFilterScreen(
                 Box(modifier = Modifier.weight(1f)) {
                     PullToRefreshBox(
                         isRefreshing = isRefreshing,
-                        onRefresh = onRefresh,
+                        onRefresh = { onRefresh(true) },
                         modifier = Modifier
                             .fillMaxWidth()
                     ) {
@@ -398,7 +389,7 @@ fun AppFilterScreen(
                                         .padding(8.dp)
                                 ) {
                                     LaunchedEffect(app.packageName) {
-                                        viewModel.loadIcon(app.packageName)
+                                        iconViewModel.loadIcon(app.packageName)
                                     }
                                     val icon = iconMap[app.packageName]
                                     AppIcon(icon, app.name)
@@ -426,13 +417,15 @@ fun AppFilterScreen(
                 }
             }
 
-            AppLetters(activeLetter) { char, showLetter ->
-                showLetterPopup = showLetter
-                if (char != null && char != activeLetter) {
-                    activeLetter = char
-                    letterToIndexMap[activeLetter]?.let { index ->
-                        scope.launch {
-                            lazyListState.animateScrollToItem(index)
+            if (!isRefreshing) {
+                AppLetters(activeLetter) { char, showLetter ->
+                    showLetterPopup = showLetter
+                    if (char != null && char != activeLetter) {
+                        activeLetter = char
+                        letterToIndexMap[activeLetter]?.let { index ->
+                            scope.launch {
+                                lazyListState.animateScrollToItem(index)
+                            }
                         }
                     }
                 }
@@ -506,24 +499,6 @@ fun AppFilterScreen(
             AppLetterPopup(activeLetter, showLetterPopup)
         }
     }
-}
-
-@Immutable
-private data class AppInfo(
-    val name: String,
-    val packageName: String
-)
-
-private fun getAllApps(context: Context): List<AppInfo> {
-    val packageManager = context.packageManager
-    return packageManager.getInstalledPackages(PackageManager.GET_ACTIVITIES or PackageManager.GET_SERVICES)
-        .filter { it.applicationInfo != null }
-        .map { packageInfo ->
-            AppInfo(
-                name = packageInfo.applicationInfo?.loadLabel(packageManager).toString(),
-                packageName = packageInfo.packageName
-            )
-        }
 }
 
 @Composable
