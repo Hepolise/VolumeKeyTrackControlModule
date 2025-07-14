@@ -421,7 +421,6 @@ fun AppFilterScreen(
                                     )
                                 }
                             }
-
                         }
                     }
                 }
@@ -538,7 +537,6 @@ private fun AppIcon(bitmap: Bitmap?, contentDescription: String) {
         contentScale = ContentScale.Crop,
     )
 }
-
 
 @Composable
 private fun ClearAppsAlertDialog(
