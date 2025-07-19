@@ -46,8 +46,10 @@ object VolumeKeyControlModuleHandlers {
             with(param) {
                 val event = args[0] as KeyEvent
                 try {
-                    initManagers()
-                    initControllers()
+                    with(getContext()) {
+                        initManagers()
+                        initControllers()
+                    }
                 } catch (t: Throwable) {
                     log("init failed")
                     t.printStackTrace()
@@ -78,7 +80,6 @@ object VolumeKeyControlModuleHandlers {
         log("isDownPressed: $isDownPressed")
         log("isUpPressed: $isUpPressed")
         log("hasActiveMediaController: ${hasActiveMediaController()}, required: true")
-        log("event.repeatCount: ${event.repeatCount}, required: 0") // TODO
         val needHook =
             (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
                     && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
@@ -106,31 +107,31 @@ object VolumeKeyControlModuleHandlers {
         return !disabledStates.contains(display.state)
     }
 
-    private fun MethodHookParam.initManagers() {
-        with(getContext()) {
-            audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager?
-                ?: throw NullPointerException("Unable to obtain audio service")
-            powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager?
-                ?: throw NullPointerException("Unable to obtain power service")
-            displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager?
-                ?: throw NullPointerException("Unable to obtain display service")
-            vibrator = getVibrator()
-        }
+    private fun Context.initManagers() {
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager?
+            ?: throw NullPointerException("Unable to obtain audio service")
+        powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager?
+            ?: throw NullPointerException("Unable to obtain power service")
+        displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager?
+            ?: throw NullPointerException("Unable to obtain display service")
+        vibrator = getVibrator()
     }
 
-    private fun MethodHookParam.initControllers() {
+    private fun Context.initControllers() {
+        val context = this
+        val classLoader = javaClass.classLoader
         val mediaSessionHelperClass = XposedHelpers.findClass(
             CLASS_MEDIA_SESSION_LEGACY_HELPER,
-            thisObject.javaClass.classLoader
+            classLoader
         )
         val helper = XposedHelpers.callStaticMethod(
             mediaSessionHelperClass,
             "getHelper",
-            getContext()
+            context
         )
         val mSessionManager = XposedHelpers.getObjectField(helper, "mSessionManager")
         val componentNameClass =
-            XposedHelpers.findClass(CLASS_COMPONENT_NAME, thisObject.javaClass.classLoader)
+            XposedHelpers.findClass(CLASS_COMPONENT_NAME, classLoader)
 
         @Suppress("UNCHECKED_CAST")
         mediaControllers = XposedHelpers.callMethod(
@@ -146,32 +147,32 @@ object VolumeKeyControlModuleHandlers {
         val keyHelper = KeyHelper(event.keyCode)
         keyHelper.updateFlags(action)
         when (action) {
-            Action.PRESS -> handleDownAction(keyHelper)
-            Action.UNPRESS -> handleUpAction(keyHelper)
+            Action.PRESSED -> handlePressedAction(keyHelper)
+            Action.UNPRESSED -> handleUnpressedAction(keyHelper)
         }
         setResult(0)
     }
 
-    private fun MethodHookParam.handleDownAction(keyHelper: KeyHelper) {
-        log("Volume down action received, down: $isDownPressed, up: $isUpPressed")
+    private fun MethodHookParam.handlePressedAction(keyHelper: KeyHelper) {
+        log("Volume pressed action received, down: $isDownPressed, up: $isUpPressed")
         isLongPress = false
         if (isUpPressed && isDownPressed) {
             log("Aborting delayed skip")
-            handleVolumeSkipPressAbort()
+            abortSkip()
         } else {
             // only one button pressed
             if (getMediaController().isMusicActive()) {
                 log("Music is active, creating delayed skip")
-                handleVolumeSkipPress(keyHelper)
+                delay(keyHelper.mediaEvent)
             }
             log("Creating delayed play pause")
-            handleVolumePlayPausePress()
+            delay(MediaEvent.PlayPause)
         }
     }
 
-    private fun MethodHookParam.handleUpAction(keyHelper: KeyHelper) {
-        log("Volume up action received, down: $isDownPressed, up: $isUpPressed")
-        handleVolumeAllPressAbort()
+    private fun MethodHookParam.handleUnpressedAction(keyHelper: KeyHelper) {
+        log("Volume unpressed action received, down: $isDownPressed, up: $isUpPressed")
+        abortAll()
         if (!isLongPress && getMediaController().isMusicActive()) {
             log("Adjusting music volume")
             keyHelper.adjustStreamVolume(audioManager)
@@ -198,9 +199,9 @@ object VolumeKeyControlModuleHandlers {
             val filterType = prefs.getAppFilterType()
             val apps = prefs.getApps(filterType)
             when (filterType) {
-                SharedPreferencesUtil.AppFilterType.Disabled -> true
-                SharedPreferencesUtil.AppFilterType.WhiteList -> it.packageName in apps
-                SharedPreferencesUtil.AppFilterType.BlackList -> it.packageName !in apps
+                SharedPreferencesUtil.AppFilterType.DISABLED -> true
+                SharedPreferencesUtil.AppFilterType.WHITE_LIST -> it.packageName in apps
+                SharedPreferencesUtil.AppFilterType.BLACK_LIST -> it.packageName !in apps
             }
         }?.also { log("Chosen media controller: ${it.packageName}") }
     }
@@ -229,45 +230,33 @@ object VolumeKeyControlModuleHandlers {
         }
     }
 
-    private fun MethodHookParam.handleVolumePlayPausePress() {
+    private fun MethodHookParam.delay(event: MediaEvent) {
         val handler = getHandler()
         handler.postDelayed(
-            getRunnable(MediaEvent.PlayPause.field),
+            getRunnable(event.field),
             SharedPreferencesUtil.prefs().getLongPressDuration().toLong()
         )
     }
 
-    private fun MethodHookParam.handleVolumeSkipPress(keyHelper: KeyHelper) {
-        val handler = getHandler()
-        handler.postDelayed(
-            getRunnable(keyHelper.mediaEvent.field),
-            SharedPreferencesUtil.prefs().getLongPressDuration().toLong()
-        )
-    }
-
-    private fun MethodHookParam.handleVolumeSkipPressAbort() {
+    private fun MethodHookParam.abortSkip() {
         log("Aborting skip")
+        abortEvents(MediaEvent.Prev, MediaEvent.Next)
+    }
+
+    private fun MethodHookParam.abortAll() {
+        log("Aborting all")
+        abortEvents(MediaEvent.Prev, MediaEvent.Next, MediaEvent.PlayPause)
+    }
+
+    private fun MethodHookParam.abortEvents(vararg events: MediaEvent) {
         val handler = getHandler()
-        listOf(MediaEvent.Prev, MediaEvent.Next).forEach { event ->
+        events.forEach { event ->
             handler.removeCallbacks(getRunnable(event.field))
         }
     }
 
-    private fun MethodHookParam.handleVolumePlayPausePressAbort() {
-        log("Aborting play/pause")
-        val handler = getHandler()
-        handler.removeCallbacks(getRunnable(MediaEvent.PlayPause.field))
-    }
-
-    private fun MethodHookParam.handleVolumeAllPressAbort() {
-        log("Aborting all")
-        handleVolumePlayPausePressAbort()
-        handleVolumeSkipPressAbort()
-    }
-
-    private fun MethodHookParam.getRunnable(fieldName: String): Runnable {
-        return XposedHelpers.getAdditionalInstanceField(thisObject, fieldName) as Runnable
-    }
+    private fun MethodHookParam.getRunnable(fieldName: String) =
+        XposedHelpers.getAdditionalInstanceField(thisObject, fieldName) as Runnable
 
     private fun MethodHookParam.getContext() = getObjectField("mContext") as Context
 
@@ -276,7 +265,7 @@ object VolumeKeyControlModuleHandlers {
     private fun MethodHookParam.getObjectField(fieldName: String) =
         XposedHelpers.getObjectField(thisObject, fieldName)
 
-    sealed class MediaEvent(val field: String) {
+    private sealed class MediaEvent(val field: String) {
 
         open fun handle() {
             log("Sending ${this::class.simpleName}")
@@ -318,7 +307,7 @@ object VolumeKeyControlModuleHandlers {
         val mediaEvent = key.mediaEvent
 
         fun updateFlags(action: Action) {
-            val pressed = action == Action.PRESS
+            val pressed = action == Action.PRESSED
             when (key) {
                 Key.UP -> isUpPressed = pressed
                 Key.DOWN -> isDownPressed = pressed
@@ -342,7 +331,7 @@ object VolumeKeyControlModuleHandlers {
     }
 
     private enum class Action(val actionCode: Int) {
-        PRESS(KeyEvent.ACTION_DOWN),
-        UNPRESS(KeyEvent.ACTION_UP);
+        PRESSED(KeyEvent.ACTION_DOWN),
+        UNPRESSED(KeyEvent.ACTION_UP);
     }
 }

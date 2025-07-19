@@ -60,7 +60,7 @@ fun AppFilterSetting(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }) {
-            AppFilterType.values.forEach { type ->
+            AppFilterType.entries.forEach { type ->
                 DropdownMenuItem(
                     text = { Text(stringResource(type.resourceId)) },
                     onClick = {
@@ -77,7 +77,7 @@ fun AppFilterSetting(
 
     Box {
         AnimatedVisibility(
-            visible = value == AppFilterType.WhiteList || value == AppFilterType.BlackList,
+            visible = value == AppFilterType.WHITE_LIST || value == AppFilterType.BLACK_LIST,
             enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
             exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
             modifier = Modifier.fillMaxWidth()
