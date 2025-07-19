@@ -324,8 +324,8 @@ object VolumeKeyControlModuleHandlers {
 
         private companion object {
             private enum class Key(val keyCode: Int, val mediaEvent: MediaEvent) {
-                UP(KeyEvent.KEYCODE_VOLUME_UP, MediaEvent.Prev),
-                DOWN(KeyEvent.KEYCODE_VOLUME_DOWN, MediaEvent.Next),
+                UP(KeyEvent.KEYCODE_VOLUME_UP, MediaEvent.Next),
+                DOWN(KeyEvent.KEYCODE_VOLUME_DOWN, MediaEvent.Prev),
             }
         }
     }
