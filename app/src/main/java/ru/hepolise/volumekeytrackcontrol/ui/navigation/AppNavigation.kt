@@ -55,7 +55,7 @@ fun AppNavigation(sharedPreferences: SharedPreferences, vibrator: Vibrator) {
         ) { backStackEntry ->
             val filterType = SharedPreferencesUtil.AppFilterType.fromKey(
                 backStackEntry.arguments?.getString("filterType")
-                    ?: SharedPreferencesUtil.AppFilterType.Disabled.key
+                    ?: SharedPreferencesUtil.AppFilterType.DISABLED.key
             )
             AppFilterScreen(
                 filterType = filterType,

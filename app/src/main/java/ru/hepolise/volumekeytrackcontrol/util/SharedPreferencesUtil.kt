@@ -25,7 +25,7 @@ object SharedPreferencesUtil {
     const val VIBRATION_AMPLITUDE_DEFAULT_VALUE = 128
     val LONG_PRESS_DURATION_DEFAULT_VALUE = ViewConfiguration.getLongPressTimeout()
     const val IS_SWAP_BUTTONS_DEFAULT_VALUE = false
-    val APP_FILTER_TYPE_DEFAULT_VALUE = AppFilterType.Disabled.key
+    val APP_FILTER_TYPE_DEFAULT_VALUE = AppFilterType.DISABLED.key
 
     fun SharedPreferences?.getVibrationType(): VibrationType {
         val defaultValue = EFFECT_DEFAULT_VALUE
@@ -59,9 +59,12 @@ object SharedPreferencesUtil {
 
     fun SharedPreferences?.getApps(appFilterType: AppFilterType = getAppFilterType()): Set<String> {
         return when (appFilterType) {
-            AppFilterType.Disabled -> emptySet()
-            AppFilterType.WhiteList -> this?.getStringSet(WHITE_LIST_APPS, emptySet()) ?: emptySet()
-            AppFilterType.BlackList -> this?.getStringSet(BLACK_LIST_APPS, emptySet()) ?: emptySet()
+            AppFilterType.DISABLED -> emptySet()
+            AppFilterType.WHITE_LIST -> this?.getStringSet(WHITE_LIST_APPS, emptySet())
+                ?: emptySet()
+
+            AppFilterType.BLACK_LIST -> this?.getStringSet(BLACK_LIST_APPS, emptySet())
+                ?: emptySet()
         }
     }
 
@@ -71,28 +74,17 @@ object SharedPreferencesUtil {
         return if (pref.file.canRead()) pref else null
     }
 
-    sealed class AppFilterType(val value: Int, val key: String, val resourceId: Int) {
-        data object Disabled : AppFilterType(0, "disabled", R.string.app_filter_disabled)
-        data object WhiteList : AppFilterType(1, "whitelist", R.string.app_filter_white_list)
-        data object BlackList : AppFilterType(2, "blacklist", R.string.app_filter_black_list)
+    enum class AppFilterType(
+        val value: Int,
+        val key: String,
+        val resourceId: Int
+    ) {
+        DISABLED(0, "disabled", R.string.app_filter_disabled),
+        WHITE_LIST(1, "whitelist", R.string.app_filter_white_list),
+        BLACK_LIST(2, "blacklist", R.string.app_filter_black_list);
 
         companion object {
-            val values: List<AppFilterType> by lazy {
-                mutableListOf<AppFilterType>().apply {
-                    add(Disabled)
-                    add(WhiteList)
-                    add(BlackList)
-                }
-            }
-
-            fun fromKey(key: String): AppFilterType {
-                return when (key) {
-                    Disabled.key -> Disabled
-                    WhiteList.key -> WhiteList
-                    BlackList.key -> BlackList
-                    else -> Disabled
-                }
-            }
+            fun fromKey(key: String) = entries.find { it.key == key } ?: DISABLED
         }
     }
 
