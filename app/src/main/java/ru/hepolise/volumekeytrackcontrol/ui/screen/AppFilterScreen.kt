@@ -193,8 +193,8 @@ fun AppFilterScreen(
         sharedPreferences.edit {
             putStringSet(
                 when (filterType) {
-                    SharedPreferencesUtil.AppFilterType.BlackList -> BLACK_LIST_APPS
-                    SharedPreferencesUtil.AppFilterType.WhiteList -> WHITE_LIST_APPS
+                    SharedPreferencesUtil.AppFilterType.BLACK_LIST -> BLACK_LIST_APPS
+                    SharedPreferencesUtil.AppFilterType.WHITE_LIST -> WHITE_LIST_APPS
                     else -> throw IllegalStateException("Invalid filter type: $filterType")
                 },
                 selectedApps.toSet()
@@ -686,7 +686,7 @@ private class AppListComparator(
 @Composable
 fun PreviewAppFilterScreen() {
     AppFilterScreen(
-        filterType = SharedPreferencesUtil.AppFilterType.WhiteList,
+        filterType = SharedPreferencesUtil.AppFilterType.WHITE_LIST,
         sharedPreferences = LocalContext.current.getSharedPreferences(
             SETTINGS_PREFS_NAME,
             Context.MODE_PRIVATE,
