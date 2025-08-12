@@ -15,7 +15,7 @@ jobs:
     needs: call-build
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Download Build Artifacts
         uses: actions/download-artifact@v5
