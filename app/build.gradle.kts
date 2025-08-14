@@ -35,11 +35,11 @@ android {
 }
 
 dependencies {
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.2.0"))
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.2.10"))
     implementation("androidx.core:core-ktx:1.16.0")
 
     // Compose BOM (Bill of Materials)
-    implementation(platform("androidx.compose:compose-bom:2025.06.01"))
+    implementation(platform("androidx.compose:compose-bom:2025.08.00"))
 
     // Compose dependencies
     implementation("androidx.activity:activity-compose:1.10.1")
@@ -49,7 +49,7 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Compose navigation
-    implementation("androidx.navigation:navigation-compose:2.9.1")
+    implementation("androidx.navigation:navigation-compose:2.9.3")
 
     // Coil
     implementation("io.coil-kt:coil-compose:2.7.0")
