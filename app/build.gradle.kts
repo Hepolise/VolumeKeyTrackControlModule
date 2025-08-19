@@ -36,6 +36,9 @@ android {
     }
 
     namespace = "ru.hepolise.volumekeytrackcontrolmodule"
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {
