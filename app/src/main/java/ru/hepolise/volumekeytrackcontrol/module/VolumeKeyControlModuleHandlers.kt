@@ -245,7 +245,7 @@ object VolumeKeyControlModuleHandlers {
 
     private fun MethodHookParam.abortAll() {
         log("Aborting all")
-        abortEvents(MediaEvent.Prev, MediaEvent.Next, MediaEvent.PlayPause)
+        abortEvents(*MediaEvent.entries.toTypedArray())
     }
 
     private fun MethodHookParam.abortEvents(vararg events: MediaEvent) {
