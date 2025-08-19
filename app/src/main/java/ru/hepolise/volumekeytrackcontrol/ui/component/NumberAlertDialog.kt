@@ -31,11 +31,12 @@ fun NumberAlertDialog(
 ) {
     fun validate(value: Int) = value in minValue..maxValue
     var value by remember { mutableStateOf(defaultValue.toString()) }
-    val focusRequester = remember { FocusRequester() }
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(text = title) },
         text = {
+            val focusRequester = remember { FocusRequester() }
+
             Column {
                 OutlinedTextField(
                     value = value,
@@ -45,6 +46,9 @@ fun NumberAlertDialog(
                     isError = value.toIntOrNull() == null || !validate(value.toInt()),
                     modifier = Modifier.focusRequester(focusRequester)
                 )
+                LaunchedEffect(Unit) {
+                    focusRequester.requestFocus()
+                }
             }
         },
         confirmButton = {
@@ -63,7 +67,4 @@ fun NumberAlertDialog(
             }
         },
     )
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
 }

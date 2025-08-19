@@ -34,13 +34,14 @@ class VolumeControlModule : IXposedHookLoadPackage {
     }
 
     private val initMethodSignatures = mapOf(
-        // Android 14 & 15 signature
+        // Android 14, 15 and 16 signature
         // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#2033
         // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android15-release/services/core/java/com/android/server/policy/PhoneWindowManager.java#2199
+        // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/services/core/java/com/android/server/policy/PhoneWindowManager.java#2359
         arrayOf(
             Context::class.java,
             CLASS_WINDOW_MANAGER_FUNCS
-        ) to "Using Android 14 or 15 method signature",
+        ) to "Using Android 14, 15 or 16 method signature",
 
         // Android 13 signature
         // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android13-dev/services/core/java/com/android/server/policy/PhoneWindowManager.java#1873
@@ -59,13 +60,13 @@ class VolumeControlModule : IXposedHookLoadPackage {
     )
 
     private fun init(classLoader: ClassLoader) {
-        val foundMethod = initMethodSignatures.any { (params, logMessage) ->
-            tryHookMethod(classLoader, params, logMessage)
-        }
-
-        if (!foundMethod) {
-            log("Method hook failed for init!")
-            return
+        initMethodSignatures.any { (params, logMessage) ->
+            tryHookInitMethod(classLoader, params, logMessage)
+        }.also { hooked ->
+            if (!hooked) {
+                log("Method hook failed for init!")
+                return
+            }
         }
 
         // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#4117
@@ -79,7 +80,7 @@ class VolumeControlModule : IXposedHookLoadPackage {
         )
     }
 
-    private fun tryHookMethod(
+    private fun tryHookInitMethod(
         classLoader: ClassLoader,
         params: Array<Serializable>,
         logMessage: String
@@ -91,7 +92,7 @@ class VolumeControlModule : IXposedHookLoadPackage {
             )
             log(logMessage)
             true
-        } catch (ignored: NoSuchMethodError) {
+        } catch (_: NoSuchMethodError) {
             false
         }
     }
