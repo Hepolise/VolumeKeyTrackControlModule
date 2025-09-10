@@ -2,6 +2,7 @@ package ru.hepolise.volumekeytrackcontrol.util
 
 import android.content.SharedPreferences
 import android.os.Build
+import android.os.SystemClock
 import android.view.ViewConfiguration
 import de.robv.android.xposed.XSharedPreferences
 import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
@@ -9,6 +10,7 @@ import ru.hepolise.volumekeytrackcontrolmodule.R
 
 object SharedPreferencesUtil {
     const val SETTINGS_PREFS_NAME = "settings_prefs"
+    const val HOOK_PREFS_NAME = "hook_prefs"
 
     const val EFFECT = "selectedEffect"
     const val VIBRATION_LENGTH = "vibrationLength"
@@ -19,6 +21,9 @@ object SharedPreferencesUtil {
     const val WHITE_LIST_APPS = "whiteListApps"
     const val BLACK_LIST_APPS = "blackListApps"
 
+    const val LAST_INIT_HOOK_TIME = "lastInitHookTime"
+    const val LAUNCHED_COUNT = "launchedCount"
+
     val EFFECT_DEFAULT_VALUE =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) VibrationType.Click.key else VibrationType.Manual.key
     const val VIBRATION_LENGTH_DEFAULT_VALUE = 50
@@ -26,6 +31,8 @@ object SharedPreferencesUtil {
     val LONG_PRESS_DURATION_DEFAULT_VALUE = ViewConfiguration.getLongPressTimeout()
     const val IS_SWAP_BUTTONS_DEFAULT_VALUE = false
     val APP_FILTER_TYPE_DEFAULT_VALUE = AppFilterType.DISABLED.key
+
+    const val LAUNCHED_COUNT_DEFAULT_VALUE = 0
 
     fun SharedPreferences?.getVibrationType(): VibrationType {
         val defaultValue = EFFECT_DEFAULT_VALUE
@@ -68,11 +75,21 @@ object SharedPreferencesUtil {
         }
     }
 
+    fun SharedPreferences.isHooked(): Boolean =
+        getLong(
+            LAST_INIT_HOOK_TIME,
+            0L
+        ) >= (System.currentTimeMillis() - SystemClock.elapsedRealtime())
 
-    fun prefs(): SharedPreferences? {
-        val pref = XSharedPreferences(BuildConfig.APPLICATION_ID, SETTINGS_PREFS_NAME)
-        return if (pref.file.canRead()) pref else null
-    }
+    fun SharedPreferences.getLaunchedCount(): Int =
+        this.getInt(LAUNCHED_COUNT, LAUNCHED_COUNT_DEFAULT_VALUE)
+
+    private var _prefs: SharedPreferences? = null
+
+    fun prefs(): SharedPreferences? =
+        XSharedPreferences(BuildConfig.APPLICATION_ID, SETTINGS_PREFS_NAME)
+            .takeIf { it.file.canRead() }
+            ?.also { _prefs = it } ?: _prefs
 
     enum class AppFilterType(
         val value: Int,
@@ -84,7 +101,7 @@ object SharedPreferencesUtil {
         BLACK_LIST(2, "blacklist", R.string.app_filter_black_list);
 
         companion object {
-            fun fromKey(key: String) = entries.find { it.key == key } ?: DISABLED
+            fun fromKey(key: String?) = entries.find { it.key == key } ?: DISABLED
         }
     }
 

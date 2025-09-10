@@ -1,6 +1,11 @@
 package ru.hepolise.volumekeytrackcontrol.module
 
+import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.hardware.display.DisplayManager
 import android.media.AudioManager
 import android.media.session.MediaController
@@ -14,6 +19,8 @@ import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
+import ru.hepolise.volumekeytrackcontrol.receiver.HookBroadcastReceiver
+import ru.hepolise.volumekeytrackcontrol.util.Constants
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
@@ -21,6 +28,7 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPress
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
+import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
 
 
 object VolumeKeyControlModuleHandlers {
@@ -37,12 +45,15 @@ object VolumeKeyControlModuleHandlers {
     private lateinit var displayManager: DisplayManager
     private lateinit var vibrator: Vibrator
 
+    private var prefs: SharedPreferences? = null
+
     private var mediaControllers: List<MediaController>? = null
 
     private fun log(text: String) = LogHelper.log(VolumeControlModule::class.java.simpleName, text)
 
     val handleInterceptKeyBeforeQueueing: XC_MethodHook = object : XC_MethodHook() {
         override fun beforeHookedMethod(param: MethodHookParam) {
+            initPrefs()
             with(param) {
                 val event = args[0] as KeyEvent
                 try {
@@ -64,10 +75,22 @@ object VolumeKeyControlModuleHandlers {
 
     val handleConstructPhoneWindowManager: XC_MethodHook = object : XC_MethodHook() {
         override fun afterHookedMethod(param: MethodHookParam) {
+            log("handleConstructPhoneWindowManager: initialized")
+            val context = param.getContext()
             MediaEvent.entries.forEach { event ->
-                val runnable = Runnable { event.handle() }
+                val runnable = Runnable { event.handle(context) }
                 XposedHelpers.setAdditionalInstanceField(param.thisObject, event.field, runnable)
             }
+
+            val filter = IntentFilter(Intent.ACTION_USER_UNLOCKED)
+            context.registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(ctx: Context, intent: Intent) {
+                    context.sendBroadcast {
+                        putExtra(Constants.HOOKED, true)
+                    }
+                    ctx.unregisterReceiver(this)
+                }
+            }, filter)
         }
     }
 
@@ -117,6 +140,10 @@ object VolumeKeyControlModuleHandlers {
         vibrator = getVibrator()
     }
 
+    private fun initPrefs() {
+        prefs = SharedPreferencesUtil.prefs()
+    }
+
     private fun Context.initControllers() {
         val context = this
         val classLoader = javaClass.classLoader
@@ -143,7 +170,7 @@ object VolumeKeyControlModuleHandlers {
     }
 
     private fun MethodHookParam.doHook(event: KeyEvent) {
-        val action = Action.entries.find { it.actionCode == event.action }!!
+        val action = Action.entries.single { it.actionCode == event.action }
         val keyHelper = KeyHelper(event.keyCode)
         keyHelper.updateFlags(action)
         when (action) {
@@ -160,7 +187,6 @@ object VolumeKeyControlModuleHandlers {
             log("Aborting delayed skip")
             abortSkip()
         } else {
-            // only one button pressed
             if (getMediaController().isMusicActive()) {
                 log("Music is active, creating delayed skip")
                 delay(keyHelper.mediaEvent)
@@ -194,10 +220,9 @@ object VolumeKeyControlModuleHandlers {
     }
 
     private fun getMediaController(): MediaController? {
-        val prefs = SharedPreferencesUtil.prefs()
+        val filterType = prefs.getAppFilterType()
+        val apps = prefs.getApps(filterType)
         return mediaControllers?.find {
-            val filterType = prefs.getAppFilterType()
-            val apps = prefs.getApps(filterType)
             when (filterType) {
                 SharedPreferencesUtil.AppFilterType.DISABLED -> true
                 SharedPreferencesUtil.AppFilterType.WHITE_LIST -> it.packageName in apps
@@ -230,11 +255,26 @@ object VolumeKeyControlModuleHandlers {
         }
     }
 
+    private fun Context.sendBroadcast(block: Intent.() -> Unit) {
+        val modulePackage = BuildConfig.APPLICATION_ID
+
+        val intent = Intent().apply {
+            component = ComponentName(
+                modulePackage,
+                HookBroadcastReceiver::class.java.name
+            )
+            action = Constants.HOOK_UPDATE
+            block()
+            setPackage(modulePackage)
+        }
+        sendBroadcast(intent)
+    }
+
     private fun MethodHookParam.delay(event: MediaEvent) {
         val handler = getHandler()
         handler.postDelayed(
             getRunnable(event.field),
-            SharedPreferencesUtil.prefs().getLongPressDuration().toLong()
+            prefs.getLongPressDuration().toLong()
         )
     }
 
@@ -267,16 +307,19 @@ object VolumeKeyControlModuleHandlers {
 
     private sealed class MediaEvent(val field: String) {
 
-        open fun handle() {
+        open fun handle(context: Context) {
             log("Sending ${this::class.simpleName}")
             isLongPress = true
             sendMediaButtonEventAndTriggerVibration(this)
+            context.sendBroadcast {
+                putExtra(Constants.INCREMENT_LAUNCH_COUNT, true)
+            }
         }
 
         object PlayPause : MediaEvent("mVolumeBothLongPress") {
-            override fun handle() {
+            override fun handle(context: Context) {
                 if (isUpPressed && isDownPressed) {
-                    super.handle()
+                    super.handle(context)
                 } else {
                     log("Not sending ${this::class.simpleName}, down: $isDownPressed, up: $isUpPressed")
                 }
@@ -295,7 +338,7 @@ object VolumeKeyControlModuleHandlers {
 
     private class KeyHelper(keyCode: Int) {
         private val origKey = Key.entries.find { it.keyCode == keyCode }!!
-        private val isSwap = SharedPreferencesUtil.prefs().isSwapButtons()
+        private val isSwap = prefs.isSwapButtons()
         private val key = if (isSwap) {
             when (origKey) {
                 Key.UP -> Key.DOWN

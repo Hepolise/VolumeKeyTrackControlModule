@@ -5,15 +5,17 @@ pluginManagement {
         mavenCentral()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         maven {
-            url "https://api.xposed.info/"
+            url = uri("https://api.xposed.info/")
         }
         google()
         mavenCentral()
     }
 }
+
 rootProject.name = "VolumeKeyTrackControlModule"
-include ':app'
+include(":app")

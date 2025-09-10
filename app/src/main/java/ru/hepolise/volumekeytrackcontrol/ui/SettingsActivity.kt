@@ -23,9 +23,10 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import ru.hepolise.volumekeytrackcontrol.ui.component.ModuleIsNotEnabled
 import ru.hepolise.volumekeytrackcontrol.ui.navigation.AppNavigation
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.HOOK_PREFS_NAME
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isHooked
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import kotlin.system.exitProcess
 
@@ -44,14 +45,9 @@ class SettingsActivity : ComponentActivity() {
         setUpSplashScreenAnimation()
         enableEdgeToEdge()
         setContent {
-            val prefs = tryLoadPrefs(this)
-
+            val prefs = tryLoadPrefs()
             MaterialTheme(colorScheme = dynamicColorScheme(context = this)) {
-                if (prefs == null) {
-                    ModuleIsNotEnabled()
-                } else {
-                    AppNavigation(sharedPreferences = prefs, vibrator = getVibrator())
-                }
+                AppNavigation(settingsPrefs = prefs, vibrator = getVibrator())
             }
         }
     }
@@ -63,10 +59,12 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 
-    private fun tryLoadPrefs(context: Context): SharedPreferences? = try {
+    private fun Context.tryLoadPrefs(): SharedPreferences? = try {
+        isHooked = getSharedPreferences(HOOK_PREFS_NAME, MODE_PRIVATE).isHooked()
+        shouldRemoveFromRecents = !isHooked
         @SuppressLint("WorldReadableFiles")
         @Suppress("DEPRECATION")
-        context.getSharedPreferences(SETTINGS_PREFS_NAME, MODE_WORLD_READABLE)
+        getSharedPreferences(SETTINGS_PREFS_NAME, MODE_WORLD_READABLE)
     } catch (_: SecurityException) {
         shouldRemoveFromRecents = true
         null
