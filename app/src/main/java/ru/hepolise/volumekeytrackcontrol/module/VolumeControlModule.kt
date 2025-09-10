@@ -23,41 +23,42 @@ class VolumeControlModule : IXposedHookLoadPackage {
 
         private fun log(text: String) =
             LogHelper.log(VolumeControlModule::class.java.simpleName, text)
+
+        private val initMethodSignatures = mapOf(
+            // Android 14, 15 and 16 signature
+            // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#2033
+            // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android15-release/services/core/java/com/android/server/policy/PhoneWindowManager.java#2199
+            // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/services/core/java/com/android/server/policy/PhoneWindowManager.java#2359
+            arrayOf(
+                Context::class.java,
+                CLASS_WINDOW_MANAGER_FUNCS
+            ) to "Using Android 14, 15 or 16 method signature",
+
+            // Android 13 signature
+            // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android13-dev/services/core/java/com/android/server/policy/PhoneWindowManager.java#1873
+            arrayOf(
+                Context::class.java,
+                CLASS_IWINDOW_MANAGER,
+                CLASS_WINDOW_MANAGER_FUNCS
+            ) to "Using Android 13 method signature",
+
+            // HyperOS-specific signature
+            arrayOf(
+                Context::class.java,
+                CLASS_WINDOW_MANAGER_FUNCS,
+                CLASS_IWINDOW_MANAGER
+            ) to "Using HyperOS-specific method signature"
+        )
     }
 
     @Throws(Throwable::class)
     override fun handleLoadPackage(lpparam: LoadPackageParam) {
+        log("handleLoadPackage: ${lpparam.packageName}")
         if (lpparam.packageName != "android") {
             return
         }
         init(lpparam.classLoader)
     }
-
-    private val initMethodSignatures = mapOf(
-        // Android 14, 15 and 16 signature
-        // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#2033
-        // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android15-release/services/core/java/com/android/server/policy/PhoneWindowManager.java#2199
-        // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/services/core/java/com/android/server/policy/PhoneWindowManager.java#2359
-        arrayOf(
-            Context::class.java,
-            CLASS_WINDOW_MANAGER_FUNCS
-        ) to "Using Android 14, 15 or 16 method signature",
-
-        // Android 13 signature
-        // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android13-dev/services/core/java/com/android/server/policy/PhoneWindowManager.java#1873
-        arrayOf(
-            Context::class.java,
-            CLASS_IWINDOW_MANAGER,
-            CLASS_WINDOW_MANAGER_FUNCS
-        ) to "Using Android 13 method signature",
-
-        // HyperOS-specific signature
-        arrayOf(
-            Context::class.java,
-            CLASS_WINDOW_MANAGER_FUNCS,
-            CLASS_IWINDOW_MANAGER
-        ) to "Using HyperOS-specific method signature"
-    )
 
     private fun init(classLoader: ClassLoader) {
         initMethodSignatures.any { (params, logMessage) ->

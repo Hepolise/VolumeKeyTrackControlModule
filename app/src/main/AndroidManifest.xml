@@ -26,6 +26,14 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name="ru.hepolise.volumekeytrackcontrol.receiver.HookBroadcastReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="${applicationId}.HOOK_UPDATE" />
+            </intent-filter>
+        </receiver>
+
         <!-- metadata -->
         <meta-data
             android:name="xposedmodule"

@@ -21,3 +21,5 @@ fun <T> State<T>.debounce(
     }
     return debouncedState
 }
+
+var isHooked = false

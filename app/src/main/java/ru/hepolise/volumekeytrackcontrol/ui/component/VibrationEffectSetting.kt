@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -24,7 +23,6 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -35,8 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.EFFECT
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE
@@ -80,7 +76,6 @@ fun VibrationEffectSetting(
     onValueChange: (VibrationSettingData) -> Unit
 ) {
     val (vibrationType, vibrationLength, vibrationAmplitude) = value
-    Text(text = stringResource(R.string.vibration_settings), fontSize = 20.sp)
 
     var effectExpanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
@@ -131,18 +126,12 @@ fun VibrationEffectSetting(
                     exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Slider(
-                            value = vibrationLength.toFloat(),
-                            onValueChange = {
-                                onValueChange(value.copy(vibrationLength = it.toInt()))
-                            },
+                        PrefsSlider(
+                            value = vibrationLength,
+                            onValueChange = { onValueChange(value.copy(vibrationLength = it)) },
                             valueRange = 10f..500f,
-                            onValueChangeFinished = {
-                                sharedPreferences.edit {
-                                    putInt(VIBRATION_LENGTH, vibrationLength)
-                                }
-                            },
-                            modifier = Modifier.widthIn(max = 300.dp)
+                            prefKey = VIBRATION_LENGTH,
+                            sharedPreferences = sharedPreferences
                         )
 
                         var showManualVibrationLengthDialog by remember { mutableStateOf(false) }
@@ -176,18 +165,12 @@ fun VibrationEffectSetting(
                             )
                         }
 
-                        Slider(
-                            value = vibrationAmplitude.toFloat(),
-                            onValueChange = {
-                                onValueChange(value.copy(vibrationAmplitude = it.toInt()))
-                            },
+                        PrefsSlider(
+                            value = vibrationAmplitude,
+                            onValueChange = { onValueChange(value.copy(vibrationAmplitude = it)) },
                             valueRange = 1f..255f,
-                            onValueChangeFinished = {
-                                sharedPreferences.edit {
-                                    putInt(VIBRATION_AMPLITUDE, vibrationAmplitude)
-                                }
-                            },
-                            modifier = Modifier.widthIn(max = 300.dp)
+                            prefKey = VIBRATION_AMPLITUDE,
+                            sharedPreferences = sharedPreferences
                         )
 
                         var showVibrationAmplitudeDialog by remember { mutableStateOf(false) }

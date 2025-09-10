@@ -1,6 +1,12 @@
 <resources>
     <string name="app_name">Volume Key Track Control</string>
 
+    <string name="module_info">Module Info</string>
+    <string name="module_status">Status:</string>
+    <string name="module_status_active">Active</string>
+    <string name="module_status_inactive">Inactive</string>
+    <string name="module_launch_count">Launch Count:</string>
+
     <string name="vibration_settings">Vibration Settings</string>
     <string name="long_press_settings">Long Press Settings</string>
     <string name="other_settings">Other Settings</string>
@@ -50,8 +56,12 @@
     <string name="settings_reset_toast">Settings are reset to default</string>
     <string name="about">About</string>
 
-    <string name="module_is_not_enabled">Module is not enabled in LSPosed.\nIf the module is enabled and you still see this screen, try to restart the app.\nRecommended LSPosed version:</string>
-    <string name="recommended_lsposed_version">JingMatrix</string>
+    <string name="module_is_not_enabled">Module is not enabled in LSPosed.\nIf the module is enabled and you still see this screen, try to restart the app.</string>
+    <string name="module_init_error">Module initialization error.\nIf the module is enabled and you still see this screen, check if you have selected recommended apps and rebooted your device.</string>
+    <string name="open_an_issue">Open an issue</string>
+    <string name="if_the_problem_persists">if the problem persists.</string>
+    <string name="recommended_lsposed_version">Recommended LSPosed version:</string>
+    <string name="recommended_lsposed_version_url">JingMatrix</string>
 
     <string name="back">Back</string>
 

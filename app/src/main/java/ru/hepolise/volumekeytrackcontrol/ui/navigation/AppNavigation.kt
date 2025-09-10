@@ -17,7 +17,7 @@ import ru.hepolise.volumekeytrackcontrol.ui.screen.SettingsScreen
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 
 @Composable
-fun AppNavigation(sharedPreferences: SharedPreferences, vibrator: Vibrator) {
+fun AppNavigation(settingsPrefs: SharedPreferences?, vibrator: Vibrator) {
     val navController = rememberNavController()
 
     NavHost(
@@ -28,40 +28,41 @@ fun AppNavigation(sharedPreferences: SharedPreferences, vibrator: Vibrator) {
             route = "main",
         ) {
             SettingsScreen(
-                sharedPreferences = sharedPreferences,
+                settingsPrefs = settingsPrefs,
                 navController = navController,
                 vibrator = vibrator
             )
         }
 
-        composable(
-            route = "appFilter/{filterType}",
-            enterTransition = {
-                slideInHorizontally(
-                    initialOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-                ) + fadeIn(
-                    animationSpec = tween(durationMillis = 300)
+        settingsPrefs?.also { sharedPreferences ->
+            composable(
+                route = "appFilter/{filterType}",
+                enterTransition = {
+                    slideInHorizontally(
+                        initialOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                    ) + fadeIn(
+                        animationSpec = tween(durationMillis = 300)
+                    )
+                },
+                exitTransition = {
+                    slideOutHorizontally(
+                        targetOffsetX = { fullWidth -> fullWidth },
+                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                    ) + fadeOut(
+                        animationSpec = tween(durationMillis = 300)
+                    )
+                }
+            ) { backStackEntry ->
+                val filterType = SharedPreferencesUtil.AppFilterType.fromKey(
+                    backStackEntry.arguments?.getString("filterType")
                 )
-            },
-            exitTransition = {
-                slideOutHorizontally(
-                    targetOffsetX = { fullWidth -> fullWidth },
-                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-                ) + fadeOut(
-                    animationSpec = tween(durationMillis = 300)
+                AppFilterScreen(
+                    filterType = filterType,
+                    sharedPreferences = sharedPreferences,
+                    navController = navController
                 )
             }
-        ) { backStackEntry ->
-            val filterType = SharedPreferencesUtil.AppFilterType.fromKey(
-                backStackEntry.arguments?.getString("filterType")
-                    ?: SharedPreferencesUtil.AppFilterType.DISABLED.key
-            )
-            AppFilterScreen(
-                filterType = filterType,
-                sharedPreferences = sharedPreferences,
-                navController = navController
-            )
         }
     }
 }

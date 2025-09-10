@@ -3,28 +3,50 @@ package ru.hepolise.volumekeytrackcontrol.ui.screen
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.os.Vibrator
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -33,11 +55,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString.Builder
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.navigation.NavController
@@ -46,16 +77,19 @@ import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
+import ru.hepolise.volumekeytrackcontrol.ui.isHooked
 import ru.hepolise.volumekeytrackcontrol.util.Constants
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.APP_FILTER_TYPE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.EFFECT_DEFAULT_VALUE
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.HOOK_PREFS_NAME
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLaunchedCount
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
@@ -68,94 +102,144 @@ import ru.hepolise.volumekeytrackcontrolmodule.R
 @Composable
 fun SettingsScreen(
     navController: NavController?,
-    sharedPreferences: SharedPreferences,
+    settingsPrefs: SharedPreferences?,
     vibrator: Vibrator?
 ) {
     val context = LocalContext.current
 
-    var longPressDuration by remember { mutableIntStateOf(sharedPreferences.getLongPressDuration()) }
-    var vibrationType by remember { mutableStateOf(sharedPreferences.getVibrationType()) }
-    var vibrationLength by remember { mutableIntStateOf(sharedPreferences.getVibrationLength()) }
-    var vibrationAmplitude by remember { mutableIntStateOf(sharedPreferences.getVibrationAmplitude()) }
-    var isSwapButtons by remember { mutableStateOf(sharedPreferences.isSwapButtons()) }
-    var appFilterType by remember { mutableStateOf(sharedPreferences.getAppFilterType()) }
+    val hookPrefs = context.getSharedPreferences(HOOK_PREFS_NAME, Context.MODE_PRIVATE)
+
+    var longPressDuration by remember { mutableIntStateOf(settingsPrefs.getLongPressDuration()) }
+    var vibrationType by remember { mutableStateOf(settingsPrefs.getVibrationType()) }
+    var vibrationLength by remember { mutableIntStateOf(settingsPrefs.getVibrationLength()) }
+    var vibrationAmplitude by remember { mutableIntStateOf(settingsPrefs.getVibrationAmplitude()) }
+    var isSwapButtons by remember { mutableStateOf(settingsPrefs.isSwapButtons()) }
+    var appFilterType by remember { mutableStateOf(settingsPrefs.getAppFilterType()) }
+    var showResetSettingsDialog by remember { mutableStateOf(false) }
+
+    val isHooked = isHooked.takeIf { settingsPrefs != null } ?: false
+    var launchedCount by remember { mutableIntStateOf(hookPrefs.getLaunchedCount()) }
+
+    val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+        launchedCount = hookPrefs.getLaunchedCount()
+    }
+    hookPrefs.registerOnSharedPreferenceChangeListener(listener)
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.app_name)) })
-        }
+            LargeTopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                actions = {
+                    if (settingsPrefs != null) {
+                        IconButton(onClick = { showResetSettingsDialog = true }) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.settings_reset)
+                            )
+                        }
+                    }
+                    IconButton(onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW)
+                        intent.data = Constants.GITHUB_URL.toUri()
+                        context.startActivity(intent)
+                    }) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = stringResource(R.string.about)
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
+        },
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .verticalScroll(rememberScrollState())
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp)
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 48.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            SettingsCard(
+                icon = if (isHooked) Icons.Default.Done else Icons.Default.Warning,
+                title = stringResource(R.string.module_info),
             ) {
-
-                LongPressSetting(longPressDuration, sharedPreferences) {
-                    longPressDuration = it
-                }
-
-                HorizontalDivider(modifier = Modifier.widthIn(max = 300.dp))
-
-                VibrationEffectSetting(
-                    value = VibrationSettingData(
-                        vibrationType, vibrationLength, vibrationAmplitude
-                    ),
-                    vibrator = vibrator,
-                    sharedPreferences = sharedPreferences
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    vibrationType = it.vibrationType
-                    vibrationLength = it.vibrationLength
-                    vibrationAmplitude = it.vibrationAmplitude
+                    Text(
+                        stringResource(R.string.module_status),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = stringResource(
+                            if (isHooked) R.string.module_status_active
+                            else R.string.module_status_inactive
+                        ),
+                        color = if (isHooked) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-
-                HorizontalDivider(modifier = Modifier.widthIn(max = 300.dp))
-
-                AppFilterSetting(
-                    value = appFilterType,
-                    sharedPreferences = sharedPreferences,
-                    onValueChange = { newAppFilterType -> appFilterType = newAppFilterType },
-                ) {
-                    navController?.navigate("appFilter/${appFilterType.key}")
+                when {
+                    isHooked -> ModuleIsEnabled(launchedCount)
+                    settingsPrefs == null -> ModuleIsNotEnabled()
+                    else -> ModuleInitError()
                 }
-
-                HorizontalDivider(modifier = Modifier.widthIn(max = 300.dp))
-
-                Text(text = stringResource(R.string.other_settings), fontSize = 20.sp)
-
-                SwapButtonsSetting(
-                    isSwapButtons = isSwapButtons,
-                    sharedPreferences = sharedPreferences
-                ) {
-                    isSwapButtons = it
-                }
-
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(end = 16.dp, bottom = 8.dp)
-            ) {
-                Spacer(modifier = Modifier.weight(1f))
-
-                var showResetSettingsDialog by remember { mutableStateOf(false) }
-                Button(onClick = {
-                    showResetSettingsDialog = true
-                }) {
-                    Text(stringResource(R.string.settings_reset))
+            if (settingsPrefs != null && isHooked) {
+                SettingsCard(
+                    icon = Icons.Default.Settings,
+                    title = stringResource(R.string.long_press_settings)
+                ) {
+                    LongPressSetting(longPressDuration, settingsPrefs) {
+                        longPressDuration = it
+                    }
+                    SwapButtonsSetting(
+                        isSwapButtons = isSwapButtons,
+                        sharedPreferences = settingsPrefs
+                    ) {
+                        isSwapButtons = it
+                    }
                 }
 
+                SettingsCard(
+                    icon = Icons.Default.Notifications,
+                    title = stringResource(R.string.vibration_settings)
+                ) {
+                    VibrationEffectSetting(
+                        value = VibrationSettingData(
+                            vibrationType,
+                            vibrationLength,
+                            vibrationAmplitude
+                        ),
+                        vibrator = vibrator,
+                        sharedPreferences = settingsPrefs
+                    ) {
+                        vibrationType = it.vibrationType
+                        vibrationLength = it.vibrationLength
+                        vibrationAmplitude = it.vibrationAmplitude
+                    }
+                }
+
+                SettingsCard(
+                    icon = Icons.Default.Star,
+                    title = stringResource(R.string.app_filter),
+                    showAction = appFilterType != SharedPreferencesUtil.AppFilterType.DISABLED,
+                    onActionClick = { navController?.navigate("appFilter/${appFilterType.key}") }
+                ) {
+                    AppFilterSetting(
+                        value = appFilterType,
+                        sharedPreferences = settingsPrefs,
+                        onValueChange = { appFilterType = it },
+                    )
+                }
                 if (showResetSettingsDialog) {
                     AlertDialog(
                         onDismissRequest = { showResetSettingsDialog = false },
@@ -164,7 +248,7 @@ fun SettingsScreen(
                         confirmButton = {
                             Button(onClick = {
                                 showResetSettingsDialog = false
-                                sharedPreferences.edit { clear() }
+                                settingsPrefs.edit { clear() }
                                 vibrationType = VibrationType.fromKey(EFFECT_DEFAULT_VALUE)
                                 vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
                                 vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
@@ -189,29 +273,141 @@ fun SettingsScreen(
                         }
                     )
                 }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Button(onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW)
-                    intent.data = Constants.GITHUB_URL.toUri()
-                    context.startActivity(intent)
-                }) {
-                    Text(stringResource(R.string.about))
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
             }
         }
     }
 }
 
-@Preview(showBackground = true)
+@Composable
+fun SettingsCard(
+    icon: ImageVector,
+    title: String,
+    showAction: Boolean = false,
+    actionIcon: ImageVector? = null,
+    onActionClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(icon, contentDescription = null)
+                Spacer(Modifier.width(12.dp))
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.weight(1f))
+                AnimatedVisibility(
+                    visible = showAction,
+                    enter = fadeIn() + slideInHorizontally(initialOffsetX = { it / 2 }),
+                    exit = fadeOut() + slideOutHorizontally(targetOffsetX = { it / 2 })
+                ) {
+                    Icon(
+                        imageVector = actionIcon ?: Icons.Default.Edit,
+                        contentDescription = null,
+                        modifier = Modifier.clickable(onClick = { onActionClick?.invoke() })
+                    )
+                }
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+fun ModuleIsEnabled(launchedCount: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            stringResource(R.string.module_launch_count),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            text = launchedCount.toString(),
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+fun ModuleIsNotEnabled() {
+    Text(
+        text = buildAnnotatedString {
+            append(stringResource(id = R.string.module_is_not_enabled))
+            RecommendedLsposedVersion()
+        }
+    )
+}
+
+@Composable
+fun ModuleInitError() {
+    Text(
+        text = buildAnnotatedString {
+            append(stringResource(id = R.string.module_init_error))
+            append("\n")
+            append("\n")
+            withLink(
+                LinkAnnotation.Url(
+                    url = Constants.GITHUB_NEW_ISSUE_URL,
+                    styles = TextLinkStyles(
+                        style = SpanStyle(
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    )
+                )
+            ) {
+                append(stringResource(id = R.string.open_an_issue))
+            }
+            append(" ")
+            append(stringResource(id = R.string.if_the_problem_persists))
+            RecommendedLsposedVersion()
+        }
+    )
+}
+
+@Composable
+private fun Builder.RecommendedLsposedVersion() {
+    append("\n")
+    append("\n")
+    append(stringResource(id = R.string.recommended_lsposed_version))
+    append(" ")
+    withLink(
+        LinkAnnotation.Url(
+            url = Constants.LSPOSED_GITHUB_URL,
+            styles = TextLinkStyles(
+                style = SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    textDecoration = TextDecoration.Underline
+                )
+            )
+        )
+    ) {
+        append(stringResource(id = R.string.recommended_lsposed_version_url))
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun PreviewSettingsScreen() {
     SettingsScreen(
         navController = null,
-        sharedPreferences = LocalContext.current.getSharedPreferences(
+        settingsPrefs = LocalContext.current.getSharedPreferences(
             SETTINGS_PREFS_NAME,
             Context.MODE_PRIVATE
         ),
