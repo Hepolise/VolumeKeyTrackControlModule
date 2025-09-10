@@ -26,12 +26,11 @@
     <string name="test_vibration">Test Vibration</string>
 
     <string name="app_filter">App Filter</string>
-    <string name="manage_apps">Manage %1$s Apps</string>
     <string name="app_filter_disabled">Disabled</string>
     <string name="app_filter_white_list">White List</string>
     <string name="app_filter_black_list">Black List</string>
 
-    <string name="search_apps">Search apps</string>
+    <string name="search_apps">Search</string>
     <string name="clear_search">Clear Search</string>
     <string name="app_icon">App Icon</string>
     <string name="select_apps_for">Select apps for %1$s</string>
@@ -46,7 +45,7 @@
         <item quantity="other">Are you sure you want to clear %d apps?</item>
     </plurals>
 
-    <string name="long_press_duration">Long Press Duration: %dms</string>
+    <string name="long_press_duration">Duration: %dms</string>
     <string name="long_press_duration_dialog_title">Long Press Duration</string>
 
     <string name="swap_buttons">Swap Up/Down buttons for skipping</string>
@@ -56,7 +55,7 @@
     <string name="settings_reset_toast">Settings are reset to default</string>
     <string name="about">About</string>
 
-    <string name="module_is_not_enabled">Module is not enabled in LSPosed.\nIf the module is enabled and you still see this screen, try to restart the app.</string>
+    <string name="module_is_not_enabled">Module is not enabled in LSPosed.\nIf the module is enabled and you still see this screen, try to restart your device.</string>
     <string name="module_init_error">Module initialization error.\nIf the module is enabled and you still see this screen, check if you have selected recommended apps and rebooted your device.</string>
     <string name="open_an_issue">Open an issue</string>
     <string name="if_the_problem_persists">if the problem persists.</string>

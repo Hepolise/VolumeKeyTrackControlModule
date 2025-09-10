@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="module_info">模块信息</string>
+    <string name="module_status">状态：</string>
+    <string name="module_status_active">已启用</string>
+    <string name="module_status_inactive">未启用</string>
+    <string name="module_launch_count">启动次数：</string>
+
+    <string name="vibration_settings">振动设置</string>
+    <string name="long_press_settings">长按设置</string>
+    <string name="other_settings">其他设置</string>
+
+    <string name="vibration_effect_click">点击</string>
+    <string name="vibration_effect_double_click">双击</string>
+    <string name="vibration_effect_heavy_click">重击</string>
+    <string name="vibration_effect_tick">轻震</string>
+
+    <string name="vibration_disabled">禁用</string>
+    <string name="vibration_manual">手动</string>
+
+    <string name="vibration_length">振动时长：%d毫秒</string>
+    <string name="vibration_amplitude">振动强度：%d</string>
+    <string name="vibration_length_dialog_title">振动时长</string>
+    <string name="vibration_amplitude_dialog_title">振动强度</string>
+    <string name="test_vibration">测试振动</string>
+
+    <string name="app_filter">应用过滤</string>
+    <string name="app_filter_disabled">禁用</string>
+    <string name="app_filter_white_list">允许列表</string>
+    <string name="app_filter_black_list">禁止列表</string>
+
+    <string name="search_apps">搜索</string>
+    <string name="clear_search">清除搜索</string>
+    <string name="app_icon">应用图标</string>
+    <string name="select_apps_for">选择%1$s应用</string>
+    <string name="max_apps_limit">最多只能选择%1$d个应用。</string>
+    <string name="clear">清除</string>
+    <plurals name="app_filter_clear_apps">
+        <item quantity="other">清除 %d 个应用</item>
+    </plurals>
+    <plurals name="app_filter_clear_message">
+        <item quantity="other">确定要清除 %d 个应用吗？</item>
+    </plurals>
+
+    <string name="long_press_duration">时长：%d毫秒</string>
+    <string name="long_press_duration_dialog_title">长按时长</string>
+
+    <string name="swap_buttons">交换上下曲按钮</string>
+
+    <string name="settings_reset">重置设置</string>
+    <string name="settings_reset_message">确定要重置设置吗？</string>
+    <string name="settings_reset_toast">设置已恢复默认</string>
+    <string name="about">关于</string>
+
+    <string name="module_is_not_enabled">模块未在LSPosed中启用。\n如果模块已启用但仍看到此界面，请尝试重启设备。</string>
+    <string name="module_init_error">模块初始化错误。\n如果模块已启用但仍看到此界面，请检查是否选择了推荐应用并重启设备。</string>
+    <string name="open_an_issue">提交问题</string>
+    <string name="if_the_problem_persists">如果问题仍然存在</string>
+    <string name="recommended_lsposed_version">推荐LSPosed版本：</string>
+    <string name="recommended_lsposed_version_url">JingMatrix</string>
+
+    <string name="back">返回</string>
+
+    <string name="yes">是</string>
+    <string name="no">否</string>
+
+    <string name="ok">确定</string>
+    <string name="cancel">取消</string>
+    <string name="edit">编辑</string>
+
+    <string name="value_in_range">取值范围：%1$d～%2$d</string>
+</resources>
