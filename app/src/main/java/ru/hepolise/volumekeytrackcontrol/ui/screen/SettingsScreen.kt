@@ -145,7 +145,7 @@ fun SettingsScreen(
             LargeTopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
-                    if (settingsPrefs != null) {
+                    if (isHooked) {
                         IconButton(onClick = { showResetSettingsDialog = true }) {
                             Icon(
                                 Icons.Default.Refresh,
