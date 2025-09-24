@@ -53,6 +53,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3:1.3.2")
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
     implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Compose navigation
