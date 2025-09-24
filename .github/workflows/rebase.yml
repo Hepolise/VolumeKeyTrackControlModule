@@ -1,0 +1,27 @@
+name: Rebase Dev on Main
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Rebase dev onto main
+        run: |
+          git fetch origin
+          git checkout dev
+          git rebase origin/main || (git rebase --abort && exit 1)
+          git push origin dev --force-with-lease
