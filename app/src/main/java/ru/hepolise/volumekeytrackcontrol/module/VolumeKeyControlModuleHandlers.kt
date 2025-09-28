@@ -1,7 +1,6 @@
 package ru.hepolise.volumekeytrackcontrol.module
 
 import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -18,9 +17,8 @@ import android.view.KeyEvent
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
+import ru.hepolise.volumekeytrackcontrol.module.util.HookNotifier
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
-import ru.hepolise.volumekeytrackcontrol.receiver.HookBroadcastReceiver
-import ru.hepolise.volumekeytrackcontrol.util.Constants
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
@@ -28,7 +26,6 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPress
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
-import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
 
 
 object VolumeKeyControlModuleHandlers {
@@ -85,9 +82,7 @@ object VolumeKeyControlModuleHandlers {
             val filter = IntentFilter(Intent.ACTION_USER_UNLOCKED)
             context.registerReceiver(object : BroadcastReceiver() {
                 override fun onReceive(ctx: Context, intent: Intent) {
-                    context.sendBroadcast {
-                        putExtra(Constants.HOOKED, true)
-                    }
+                    HookNotifier.notifyHooked(context)
                     ctx.unregisterReceiver(this)
                 }
             }, filter)
@@ -255,21 +250,6 @@ object VolumeKeyControlModuleHandlers {
         }
     }
 
-    private fun Context.sendBroadcast(block: Intent.() -> Unit) {
-        val modulePackage = BuildConfig.APPLICATION_ID
-
-        val intent = Intent().apply {
-            component = ComponentName(
-                modulePackage,
-                HookBroadcastReceiver::class.java.name
-            )
-            action = Constants.HOOK_UPDATE
-            block()
-            setPackage(modulePackage)
-        }
-        sendBroadcast(intent)
-    }
-
     private fun MethodHookParam.delay(event: MediaEvent) {
         val handler = getHandler()
         handler.postDelayed(
@@ -311,9 +291,7 @@ object VolumeKeyControlModuleHandlers {
             log("Sending ${this::class.simpleName}")
             isLongPress = true
             sendMediaButtonEventAndTriggerVibration(this)
-            context.sendBroadcast {
-                putExtra(Constants.INCREMENT_LAUNCH_COUNT, true)
-            }
+            HookNotifier.incrementLaunchCount(context)
         }
 
         object PlayPause : MediaEvent("mVolumeBothLongPress") {

@@ -27,13 +27,11 @@
             </intent-filter>
         </activity>
 
-        <receiver
-            android:name="ru.hepolise.volumekeytrackcontrol.receiver.HookBroadcastReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="${applicationId}.HOOK_UPDATE" />
-            </intent-filter>
-        </receiver>
+        <provider
+            android:name="ru.hepolise.volumekeytrackcontrol.provider.HookStatusProvider"
+            android:authorities="${applicationId}.hookstatusprovider"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
 
         <!-- metadata -->
         <meta-data
