@@ -3,6 +3,7 @@ package ru.hepolise.volumekeytrackcontrol.util
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.SystemClock
+import android.util.Log
 import android.view.ViewConfiguration
 import de.robv.android.xposed.XSharedPreferences
 import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
@@ -79,7 +80,12 @@ object SharedPreferencesUtil {
         getLong(
             LAST_INIT_HOOK_TIME,
             0L
-        ) >= (System.currentTimeMillis() - SystemClock.elapsedRealtime())
+        ).also {
+            Log.d(
+                "LSPosed-Bridge",
+                "LastInitHookTime: $it"
+            )
+        } >= (System.currentTimeMillis() - SystemClock.elapsedRealtime())
 
     fun SharedPreferences.getLaunchedCount(): Int =
         this.getInt(LAUNCHED_COUNT, LAUNCHED_COUNT_DEFAULT_VALUE)

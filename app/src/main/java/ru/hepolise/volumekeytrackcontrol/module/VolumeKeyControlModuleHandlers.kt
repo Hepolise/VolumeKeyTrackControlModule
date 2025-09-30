@@ -14,18 +14,22 @@ import android.os.PowerManager
 import android.os.Vibrator
 import android.view.Display
 import android.view.KeyEvent
+import androidx.core.content.edit
+import com.crossbowffs.remotepreferences.RemotePreferences
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
 import ru.hepolise.volumekeytrackcontrol.module.util.HookNotifier
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LAST_INIT_HOOK_TIME
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
+import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
 
 
 object VolumeKeyControlModuleHandlers {
@@ -79,10 +83,28 @@ object VolumeKeyControlModuleHandlers {
                 XposedHelpers.setAdditionalInstanceField(param.thisObject, event.field, runnable)
             }
 
-            val filter = IntentFilter(Intent.ACTION_USER_UNLOCKED)
+            val filter = IntentFilter().apply {
+                addAction(Intent.ACTION_BOOT_COMPLETED)
+                addAction(Intent.ACTION_USER_UNLOCKED)
+            }
             context.registerReceiver(object : BroadcastReceiver() {
                 override fun onReceive(ctx: Context, intent: Intent) {
-                    HookNotifier.notifyHooked(context)
+                    log("onReceive: ${intent.action}")
+                    try {
+                        val prefs = RemotePreferences(
+                            context,
+                            BuildConfig.APPLICATION_ID,
+                            "test",
+                            true
+                        )
+                        prefs.edit {
+                            putLong(LAST_INIT_HOOK_TIME, System.currentTimeMillis())
+                        }
+                    } catch (e: Exception) {
+                        log("remote preferences failed")
+                        log(e.message ?: "unknown")
+                    }
+
                     ctx.unregisterReceiver(this)
                 }
             }, filter)
