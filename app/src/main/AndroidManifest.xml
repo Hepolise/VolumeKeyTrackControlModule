@@ -30,6 +30,7 @@
         <provider
             android:name="ru.hepolise.volumekeytrackcontrol.provider.HookStatusProvider"
             android:authorities="${applicationId}.hookstatusprovider"
+            android:directBootAware="true"
             android:exported="true"
             tools:ignore="ExportedContentProvider" />
 
