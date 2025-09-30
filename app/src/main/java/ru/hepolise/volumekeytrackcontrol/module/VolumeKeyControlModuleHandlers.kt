@@ -79,9 +79,13 @@ object VolumeKeyControlModuleHandlers {
                 XposedHelpers.setAdditionalInstanceField(param.thisObject, event.field, runnable)
             }
 
-            val filter = IntentFilter(Intent.ACTION_USER_UNLOCKED)
+            val filter = IntentFilter().apply {
+                addAction(Intent.ACTION_BOOT_COMPLETED)
+                addAction(Intent.ACTION_USER_UNLOCKED)
+            }
             context.registerReceiver(object : BroadcastReceiver() {
                 override fun onReceive(ctx: Context, intent: Intent) {
+                    log("onReceive: ${intent.action}")
                     HookNotifier.notifyHooked(context)
                     ctx.unregisterReceiver(this)
                 }
