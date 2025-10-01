@@ -17,11 +17,9 @@ import java.io.Serializable
 
 
 @Keep
-class VolumeControlModule : IXposedHookLoadPackage/*, IXposedHookZygoteInit*/ {
+class VolumeControlModule : IXposedHookLoadPackage {
 
     companion object {
-        private const val ZYGOTE_HOOK_DATA_FIELD_NAME = "_volumeControlModuleHookStatus"
-
         private const val CLASS_PHONE_WINDOW_MANAGER =
             "com.android.server.policy.PhoneWindowManager"
         private const val CLASS_IWINDOW_MANAGER = "android.view.IWindowManager"
