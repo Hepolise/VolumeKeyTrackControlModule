@@ -90,15 +90,15 @@ import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
-import ru.hepolise.volumekeytrackcontrol.ui.isHooked
 import ru.hepolise.volumekeytrackcontrol.util.Constants
+import ru.hepolise.volumekeytrackcontrol.util.HookStatus
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.APP_FILTER_TYPE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.EFFECT_DEFAULT_VALUE
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.HOOK_PREFS_NAME
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.STATUS_PREFS
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
@@ -120,7 +120,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
 
-    val hookPrefs = context.getSharedPreferences(HOOK_PREFS_NAME, Context.MODE_PRIVATE)
+    val hookPrefs = context.getSharedPreferences(STATUS_PREFS, Context.MODE_PRIVATE)
 
     var longPressDuration by remember { mutableIntStateOf(settingsPrefs.getLongPressDuration()) }
     var vibrationType by remember { mutableStateOf(settingsPrefs.getVibrationType()) }
@@ -130,7 +130,7 @@ fun SettingsScreen(
     var appFilterType by remember { mutableStateOf(settingsPrefs.getAppFilterType()) }
     var showResetSettingsDialog by remember { mutableStateOf(false) }
 
-    val isHooked = isHooked.takeIf { settingsPrefs != null } ?: false
+    val isHooked = HookStatus.isHooked().takeIf { settingsPrefs != null } ?: false
     var launchedCount by remember { mutableIntStateOf(hookPrefs.getLaunchedCount()) }
 
     val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->

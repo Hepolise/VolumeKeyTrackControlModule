@@ -11,7 +11,7 @@ import ru.hepolise.volumekeytrackcontrolmodule.R
 
 object SharedPreferencesUtil {
     const val SETTINGS_PREFS_NAME = "settings_prefs"
-    const val HOOK_PREFS_NAME = "hook_prefs"
+    const val STATUS_PREFS = "status_prefs"
 
     const val EFFECT = "selectedEffect"
     const val VIBRATION_LENGTH = "vibrationLength"

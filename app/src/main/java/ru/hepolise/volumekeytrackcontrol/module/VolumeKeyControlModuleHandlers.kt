@@ -1,9 +1,6 @@
 package ru.hepolise.volumekeytrackcontrol.module
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.hardware.display.DisplayManager
 import android.media.AudioManager
@@ -15,21 +12,20 @@ import android.os.Vibrator
 import android.view.Display
 import android.view.KeyEvent
 import androidx.core.content.edit
-import com.crossbowffs.remotepreferences.RemotePreferences
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
-import ru.hepolise.volumekeytrackcontrol.module.util.HookNotifier
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
+import ru.hepolise.volumekeytrackcontrol.module.util.RemotePrefsHelper
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LAST_INIT_HOOK_TIME
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LAUNCHED_COUNT
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLaunchedCount
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
-import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
 
 
 object VolumeKeyControlModuleHandlers {
@@ -82,32 +78,6 @@ object VolumeKeyControlModuleHandlers {
                 val runnable = Runnable { event.handle(context) }
                 XposedHelpers.setAdditionalInstanceField(param.thisObject, event.field, runnable)
             }
-
-            val filter = IntentFilter().apply {
-                addAction(Intent.ACTION_BOOT_COMPLETED)
-                addAction(Intent.ACTION_USER_UNLOCKED)
-            }
-            context.registerReceiver(object : BroadcastReceiver() {
-                override fun onReceive(ctx: Context, intent: Intent) {
-                    log("onReceive: ${intent.action}")
-                    try {
-                        val prefs = RemotePreferences(
-                            context,
-                            BuildConfig.APPLICATION_ID,
-                            "test",
-                            true
-                        )
-                        prefs.edit {
-                            putLong(LAST_INIT_HOOK_TIME, System.currentTimeMillis())
-                        }
-                    } catch (e: Exception) {
-                        log("remote preferences failed")
-                        log(e.message ?: "unknown")
-                    }
-
-                    ctx.unregisterReceiver(this)
-                }
-            }, filter)
         }
     }
 
@@ -313,7 +283,12 @@ object VolumeKeyControlModuleHandlers {
             log("Sending ${this::class.simpleName}")
             isLongPress = true
             sendMediaButtonEventAndTriggerVibration(this)
-            HookNotifier.incrementLaunchCount(context)
+            RemotePrefsHelper.withRemotePrefsEditor(context) {
+                val count = getLaunchedCount()
+                edit {
+                    putInt(LAUNCHED_COUNT, count + 1)
+                }
+            }
         }
 
         object PlayPause : MediaEvent("mVolumeBothLongPress") {

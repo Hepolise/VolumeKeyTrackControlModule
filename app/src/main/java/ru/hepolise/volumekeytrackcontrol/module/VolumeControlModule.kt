@@ -4,17 +4,24 @@ import android.content.Context
 import android.view.KeyEvent
 import androidx.annotation.Keep
 import de.robv.android.xposed.IXposedHookLoadPackage
+import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
 import ru.hepolise.volumekeytrackcontrol.module.VolumeKeyControlModuleHandlers.handleConstructPhoneWindowManager
 import ru.hepolise.volumekeytrackcontrol.module.VolumeKeyControlModuleHandlers.handleInterceptKeyBeforeQueueing
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
+import ru.hepolise.volumekeytrackcontrol.module.util.SystemProps
+import ru.hepolise.volumekeytrackcontrol.util.HookStatus
+import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
 import java.io.Serializable
 
+
 @Keep
-class VolumeControlModule : IXposedHookLoadPackage {
+class VolumeControlModule : IXposedHookLoadPackage/*, IXposedHookZygoteInit*/ {
 
     companion object {
+        private const val ZYGOTE_HOOK_DATA_FIELD_NAME = "_volumeControlModuleHookStatus"
+
         private const val CLASS_PHONE_WINDOW_MANAGER =
             "com.android.server.policy.PhoneWindowManager"
         private const val CLASS_IWINDOW_MANAGER = "android.view.IWindowManager"
@@ -49,20 +56,23 @@ class VolumeControlModule : IXposedHookLoadPackage {
                 CLASS_IWINDOW_MANAGER
             ) to "Using HyperOS-specific method signature"
         )
+        private var isHooked by SystemProps.Delegate("vktc", false)
     }
 
     @Throws(Throwable::class)
     override fun handleLoadPackage(lpparam: LoadPackageParam) {
         log("handleLoadPackage: ${lpparam.packageName}")
-        if (lpparam.packageName != "android") {
-            return
+        with(lpparam) {
+            when (packageName) {
+                "android" -> classLoader.init()
+                BuildConfig.APPLICATION_ID -> classLoader.hookHookStatus()
+            }
         }
-        init(lpparam.classLoader)
     }
 
-    private fun init(classLoader: ClassLoader) {
+    private fun ClassLoader.init() {
         initMethodSignatures.any { (params, logMessage) ->
-            tryHookInitMethod(classLoader, params, logMessage)
+            tryHookInitMethod(params, logMessage)
         }.also { hooked ->
             if (!hooked) {
                 log("Method hook failed for init!")
@@ -70,31 +80,71 @@ class VolumeControlModule : IXposedHookLoadPackage {
             }
         }
 
-        // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#4117
-        XposedHelpers.findAndHookMethod(
-            CLASS_PHONE_WINDOW_MANAGER,
-            classLoader,
-            "interceptKeyBeforeQueueing",
-            KeyEvent::class.java,
-            Int::class.javaPrimitiveType,
-            handleInterceptKeyBeforeQueueing
-        )
+        try {
+            // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#4117
+            XposedHelpers.findAndHookMethod(
+                CLASS_PHONE_WINDOW_MANAGER,
+                this,
+                "interceptKeyBeforeQueueing",
+                KeyEvent::class.java,
+                Int::class.javaPrimitiveType,
+                handleInterceptKeyBeforeQueueing
+            )
+        } catch (t: Throwable) {
+            log("Method hook failed for interceptKeyBeforeQueueing!")
+            t.message?.let { log(it) }
+            return
+        }
+
+        try {
+            XposedHelpers.findAndHookMethod(
+                "com.android.server.audio.AudioService",
+                this, "onSystemReady", object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        log("onSystemReady: $isHooked")
+                        isHooked = true
+                    }
+                })
+
+        } catch (t: Throwable) {
+            log("Failed to hook SystemServer")
+            t.message?.let { log(it) }
+        }
+
     }
 
-    private fun tryHookInitMethod(
-        classLoader: ClassLoader,
+    private fun ClassLoader.tryHookInitMethod(
         params: Array<Serializable>,
         logMessage: String
     ): Boolean {
         return try {
             XposedHelpers.findAndHookMethod(
-                CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
+                CLASS_PHONE_WINDOW_MANAGER, this, "init",
                 *params, handleConstructPhoneWindowManager
             )
             log(logMessage)
             true
         } catch (_: NoSuchMethodError) {
             false
+        }
+    }
+
+    private fun ClassLoader.hookHookStatus() {
+        try {
+            XposedHelpers.findAndHookMethod(
+                HookStatus::class.java.name,
+                this,
+                HookStatus::isHooked.name,
+                object : XC_MethodHook() {
+                    @Throws(Throwable::class)
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        log("isHooked is called")
+                        param.result = isHooked
+                    }
+                })
+        } catch (t: Throwable) {
+            log("Failed to hook HookStatus")
+            t.message?.let { log(it) }
         }
     }
 }

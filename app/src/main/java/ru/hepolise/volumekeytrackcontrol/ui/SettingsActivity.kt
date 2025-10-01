@@ -24,8 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import ru.hepolise.volumekeytrackcontrol.ui.navigation.AppNavigation
+import ru.hepolise.volumekeytrackcontrol.util.HookStatus
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isHooked
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import kotlin.system.exitProcess
 
@@ -59,9 +59,7 @@ class SettingsActivity : ComponentActivity() {
     }
 
     private fun Context.tryLoadPrefs(): SharedPreferences? = try {
-        isHooked = createDeviceProtectedStorageContext().getSharedPreferences("test", MODE_PRIVATE)
-            .isHooked()
-        shouldRemoveFromRecents = !isHooked
+        shouldRemoveFromRecents = !HookStatus.isHooked()
         @SuppressLint("WorldReadableFiles")
         @Suppress("DEPRECATION")
         getSharedPreferences(SETTINGS_PREFS_NAME, MODE_WORLD_READABLE)
