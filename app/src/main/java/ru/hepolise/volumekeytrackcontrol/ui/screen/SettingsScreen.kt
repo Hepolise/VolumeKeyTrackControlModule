@@ -234,7 +234,7 @@ fun SettingsScreen(
                 }
             }
 
-            if (settingsPrefs != null && isHooked) {
+            if (settingsPrefs != null && isHooked && !context.isInstalledAfterReboot()) {
                 SettingsCard(
                     icon = Icons.Default.Settings,
                     title = stringResource(R.string.long_press_settings)
