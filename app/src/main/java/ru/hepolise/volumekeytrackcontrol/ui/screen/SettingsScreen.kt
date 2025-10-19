@@ -96,6 +96,7 @@ import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
+import ru.hepolise.volumekeytrackcontrol.ui.isInstalledAfterReboot
 import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.Constants
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.APP_FILTER_TYPE_DEFAULT_VALUE
@@ -208,15 +209,19 @@ fun SettingsScreen(
                 icon = if (isHooked) Icons.Default.Done else Icons.Default.Warning,
                 title = stringResource(R.string.module_info),
             ) {
-                if (isLoading && !isHooked) {
-                    LoadingAnimation()
+                if (context.isInstalledAfterReboot()) {
+                    ModuleStatus(false)
                 } else {
-                    ModuleStatus(isHooked)
-                }
-                when {
-                    isHooked -> if (!StatusSysPropsHelper.isHooked) LaunchCounter(launchedCount)
-                    settingsPrefs == null -> ModuleIsNotEnabled()
-                    isBootCompleted -> ModuleInitError()
+                    if (isLoading && !isHooked && settingsPrefs != null) {
+                        LoadingAnimation()
+                    } else {
+                        ModuleStatus(isHooked)
+                    }
+                    when {
+                        isHooked -> if (!StatusSysPropsHelper.isHooked) LaunchCounter(launchedCount)
+                        settingsPrefs == null -> ModuleIsNotEnabled()
+                        isBootCompleted -> ModuleInitError()
+                    }
                 }
             }
 
