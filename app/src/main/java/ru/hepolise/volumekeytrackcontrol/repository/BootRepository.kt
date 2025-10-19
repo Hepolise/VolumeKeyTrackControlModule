@@ -2,6 +2,7 @@ package ru.hepolise.volumekeytrackcontrol.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -28,6 +29,12 @@ class BootRepository private constructor(private val sharedPreferences: SharedPr
 
     fun isBootCompleted(): Boolean {
         return sharedPreferences.isBootCompleted()
+    }
+
+    fun setBootCompleted() {
+        sharedPreferences.edit {
+            putLong(LAST_BOOT_COMPLETED_TIME, System.currentTimeMillis())
+        }
     }
 
     fun observeBootCompleted(): Flow<Boolean> = callbackFlow {

@@ -228,7 +228,7 @@ fun SettingsScreen(
                             )
 
                             settingsPrefs == null -> ModuleIsNotEnabled()
-                            isBootCompleted -> ModuleInitError()
+                            isBootCompleted && !isHooked -> ModuleInitError()
                         }
                     }
                 }

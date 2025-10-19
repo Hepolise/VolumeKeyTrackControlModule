@@ -40,13 +40,27 @@ class BootViewModel(
         }
     }
 
+
     private suspend fun checkBootStatus() {
-        delay(60_000)
-        StatusSysPropsHelper.refreshIsHooked()
-        if (!_isBootCompleted.value) {
-            LSPosedLogger.log("By timer, boot is not still completed")
-            _isLoading.value = false
+        val maxAttempts = 60
+        var attempts = 0
+
+        while (attempts < maxAttempts) {
+            delay(1_000)
+            StatusSysPropsHelper.refreshIsHooked()
+
+            if (StatusSysPropsHelper.isHooked) {
+                LSPosedLogger.log("Boot completed - hook detected")
+                bootRepository.setBootCompleted()
+                return
+            }
+
+            attempts++
+            LSPosedLogger.log("Attempt $attempts: hook not detected yet")
         }
+
+        LSPosedLogger.log("By timer, boot is not still completed after $maxAttempts attempts")
+        _isLoading.value = false
     }
 
     override fun onCleared() {
