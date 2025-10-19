@@ -1,16 +1,19 @@
 package ru.hepolise.volumekeytrackcontrol.util
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.Context.MODE_WORLD_READABLE
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.SystemClock
 import android.view.ViewConfiguration
 import de.robv.android.xposed.XSharedPreferences
 import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
-import ru.hepolise.volumekeytrackcontrolmodule.R
 
 object SharedPreferencesUtil {
-    const val SETTINGS_PREFS_NAME = "settings_prefs"
-    const val HOOK_PREFS_NAME = "hook_prefs"
+    const val SETTINGS_PREFS = "settings_prefs"
+    const val STATUS_PREFS = "status_prefs"
 
     const val EFFECT = "selectedEffect"
     const val VIBRATION_LENGTH = "vibrationLength"
@@ -23,6 +26,7 @@ object SharedPreferencesUtil {
 
     const val LAST_INIT_HOOK_TIME = "lastInitHookTime"
     const val LAUNCHED_COUNT = "launchedCount"
+    const val LAST_BOOT_COMPLETED_TIME = "lastBootCompletedTime"
 
     val EFFECT_DEFAULT_VALUE =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) VibrationType.Click.key else VibrationType.Manual.key
@@ -75,9 +79,17 @@ object SharedPreferencesUtil {
         }
     }
 
-    fun SharedPreferences.isHooked(): Boolean =
+    fun SharedPreferences.isHooked(): Boolean {
+        val hookTime by lazy {
+            getLong(LAST_INIT_HOOK_TIME, 0L)
+        }
+        return StatusSysPropsHelper.isHooked
+                || hookTime >= (System.currentTimeMillis() - SystemClock.elapsedRealtime())
+    }
+
+    fun SharedPreferences.isBootCompleted() =
         getLong(
-            LAST_INIT_HOOK_TIME,
+            LAST_BOOT_COMPLETED_TIME,
             0L
         ) >= (System.currentTimeMillis() - SystemClock.elapsedRealtime())
 
@@ -87,22 +99,17 @@ object SharedPreferencesUtil {
     private var _prefs: SharedPreferences? = null
 
     fun prefs(): SharedPreferences? =
-        XSharedPreferences(BuildConfig.APPLICATION_ID, SETTINGS_PREFS_NAME)
+        XSharedPreferences(BuildConfig.APPLICATION_ID, SETTINGS_PREFS)
             .takeIf { it.file.canRead() }
             ?.also { _prefs = it } ?: _prefs
 
-    enum class AppFilterType(
-        val value: Int,
-        val key: String,
-        val resourceId: Int
-    ) {
-        DISABLED(0, "disabled", R.string.app_filter_disabled),
-        WHITE_LIST(1, "whitelist", R.string.app_filter_white_list),
-        BLACK_LIST(2, "blacklist", R.string.app_filter_black_list);
+    fun Context.getSettingsSharedPreferences(): SharedPreferences? = runCatching {
+        @SuppressLint("WorldReadableFiles")
+        @Suppress("DEPRECATION")
+        return getSharedPreferences(SETTINGS_PREFS, MODE_WORLD_READABLE)
+    }.getOrNull()
 
-        companion object {
-            fun fromKey(key: String?) = entries.find { it.key == key } ?: DISABLED
-        }
-    }
+    fun Context.getStatusSharedPreferences(): SharedPreferences =
+        getSharedPreferences(STATUS_PREFS, MODE_PRIVATE)
 
 }

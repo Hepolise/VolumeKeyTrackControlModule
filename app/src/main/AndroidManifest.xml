@@ -6,6 +6,7 @@
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:icon="@mipmap/ic_launcher"
@@ -28,11 +29,20 @@
         </activity>
 
         <provider
-            android:name="ru.hepolise.volumekeytrackcontrol.provider.HookStatusProvider"
-            android:authorities="${applicationId}.hookstatusprovider"
+            android:name="ru.hepolise.volumekeytrackcontrol.provider.RemotePrefProvider"
+            android:authorities="${applicationId}"
             android:directBootAware="true"
             android:exported="true"
             tools:ignore="ExportedContentProvider" />
+
+        <receiver
+            android:name="ru.hepolise.volumekeytrackcontrol.receiver.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <!-- metadata -->
         <meta-data

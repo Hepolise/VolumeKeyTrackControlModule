@@ -102,13 +102,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ru.hepolise.volumekeytrackcontrol.ui.debounce
 import ru.hepolise.volumekeytrackcontrol.ui.model.AppInfo
-import ru.hepolise.volumekeytrackcontrol.ui.viewmodel.AppFilterViewModel
-import ru.hepolise.volumekeytrackcontrol.ui.viewmodel.AppIconViewModel
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
+import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.BLACK_LIST_APPS
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.WHITE_LIST_APPS
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
+import ru.hepolise.volumekeytrackcontrol.viewmodel.AppFilterViewModel
+import ru.hepolise.volumekeytrackcontrol.viewmodel.AppIconViewModel
 import ru.hepolise.volumekeytrackcontrolmodule.R
 
 private const val MAX_APPS = 100
@@ -118,7 +118,7 @@ private val LETTERS = ('A'..'Z').toList()
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppFilterScreen(
-    filterType: SharedPreferencesUtil.AppFilterType,
+    filterType: AppFilterType,
     sharedPreferences: SharedPreferences,
     navController: NavController? = null,
     viewModel: AppFilterViewModel = viewModel(),
@@ -193,8 +193,8 @@ fun AppFilterScreen(
         sharedPreferences.edit {
             putStringSet(
                 when (filterType) {
-                    SharedPreferencesUtil.AppFilterType.BLACK_LIST -> BLACK_LIST_APPS
-                    SharedPreferencesUtil.AppFilterType.WHITE_LIST -> WHITE_LIST_APPS
+                    AppFilterType.BLACK_LIST -> BLACK_LIST_APPS
+                    AppFilterType.WHITE_LIST -> WHITE_LIST_APPS
                     else -> throw IllegalStateException("Invalid filter type: $filterType")
                 },
                 selectedApps.toSet()
@@ -686,9 +686,9 @@ private class AppListComparator(
 @Composable
 fun PreviewAppFilterScreen() {
     AppFilterScreen(
-        filterType = SharedPreferencesUtil.AppFilterType.WHITE_LIST,
+        filterType = AppFilterType.WHITE_LIST,
         sharedPreferences = LocalContext.current.getSharedPreferences(
-            SETTINGS_PREFS_NAME,
+            SETTINGS_PREFS,
             Context.MODE_PRIVATE,
         ),
     )

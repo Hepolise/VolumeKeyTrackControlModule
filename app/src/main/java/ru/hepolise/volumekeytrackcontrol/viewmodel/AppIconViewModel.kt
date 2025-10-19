@@ -1,4 +1,4 @@
-package ru.hepolise.volumekeytrackcontrol.ui.viewmodel
+package ru.hepolise.volumekeytrackcontrol.viewmodel
 
 import android.app.Application
 import android.graphics.Bitmap

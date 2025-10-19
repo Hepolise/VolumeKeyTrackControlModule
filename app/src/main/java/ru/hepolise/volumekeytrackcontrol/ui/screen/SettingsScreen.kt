@@ -44,6 +44,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,11 +56,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -84,31 +89,35 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import ru.hepolise.volumekeytrackcontrol.ui.component.AppFilterSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
-import ru.hepolise.volumekeytrackcontrol.ui.isHooked
+import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.Constants
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.APP_FILTER_TYPE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.EFFECT_DEFAULT_VALUE
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.HOOK_PREFS_NAME
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION_DEFAULT_VALUE
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLaunchedCount
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getStatusSharedPreferences
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isHooked
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
+import ru.hepolise.volumekeytrackcontrol.util.StatusSysPropsHelper
 import ru.hepolise.volumekeytrackcontrol.util.VibrationType
+import ru.hepolise.volumekeytrackcontrol.viewmodel.BootViewModel
+import ru.hepolise.volumekeytrackcontrol.viewmodel.BootViewModelFactory
 import ru.hepolise.volumekeytrackcontrolmodule.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -120,7 +129,14 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
 
-    val hookPrefs = context.getSharedPreferences(HOOK_PREFS_NAME, Context.MODE_PRIVATE)
+    val statusPrefs = context.getStatusSharedPreferences()
+
+    val bootViewModel: BootViewModel = viewModel(
+        factory = BootViewModelFactory(context.applicationContext)
+    )
+
+    val isBootCompleted by bootViewModel.isBootCompleted.collectAsState()
+    val isLoading by bootViewModel.isLoading.collectAsState()
 
     var longPressDuration by remember { mutableIntStateOf(settingsPrefs.getLongPressDuration()) }
     var vibrationType by remember { mutableStateOf(settingsPrefs.getVibrationType()) }
@@ -130,13 +146,24 @@ fun SettingsScreen(
     var appFilterType by remember { mutableStateOf(settingsPrefs.getAppFilterType()) }
     var showResetSettingsDialog by remember { mutableStateOf(false) }
 
-    val isHooked = isHooked.takeIf { settingsPrefs != null } ?: false
-    var launchedCount by remember { mutableIntStateOf(hookPrefs.getLaunchedCount()) }
+    val isHooked by produceState(initialValue = false) {
+        value = statusPrefs.isHooked().takeIf { settingsPrefs != null } ?: false
 
-    val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
-        launchedCount = hookPrefs.getLaunchedCount()
+        snapshotFlow { isLoading }.collect {
+            value = statusPrefs.isHooked().takeIf { settingsPrefs != null } ?: false
+        }
     }
-    hookPrefs.registerOnSharedPreferenceChangeListener(listener)
+    var launchedCount by remember { mutableIntStateOf(statusPrefs.getLaunchedCount()) }
+
+    DisposableEffect(Unit) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+            launchedCount = statusPrefs.getLaunchedCount()
+        }
+        statusPrefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            statusPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -181,28 +208,15 @@ fun SettingsScreen(
                 icon = if (isHooked) Icons.Default.Done else Icons.Default.Warning,
                 title = stringResource(R.string.module_info),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        stringResource(R.string.module_status),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = stringResource(
-                            if (isHooked) R.string.module_status_active
-                            else R.string.module_status_inactive
-                        ),
-                        color = if (isHooked) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Bold
-                    )
+                if (isLoading && !isHooked) {
+                    LoadingAnimation()
+                } else {
+                    ModuleStatus(isHooked)
                 }
                 when {
-                    isHooked -> ModuleIsEnabled(launchedCount)
+                    isHooked -> if (!StatusSysPropsHelper.isHooked) LaunchCounter(launchedCount)
                     settingsPrefs == null -> ModuleIsNotEnabled()
-                    else -> ModuleInitError()
+                    isBootCompleted -> ModuleInitError()
                 }
             }
 
@@ -244,7 +258,7 @@ fun SettingsScreen(
                 SettingsCard(
                     icon = Icons.Default.Star,
                     title = stringResource(R.string.app_filter),
-                    showAction = appFilterType != SharedPreferencesUtil.AppFilterType.DISABLED,
+                    showAction = appFilterType != AppFilterType.DISABLED,
                     onActionClick = { navController?.navigate("appFilter/${appFilterType.key}") }
                 ) {
                     AppFilterSetting(
@@ -267,7 +281,7 @@ fun SettingsScreen(
                                 vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
                                 longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
                                 isSwapButtons = IS_SWAP_BUTTONS_DEFAULT_VALUE
-                                appFilterType = SharedPreferencesUtil.AppFilterType.fromKey(
+                                appFilterType = AppFilterType.fromKey(
                                     APP_FILTER_TYPE_DEFAULT_VALUE
                                 )
                                 Toast.makeText(
@@ -399,7 +413,7 @@ fun ActionIconButton(
 }
 
 @Composable
-fun ModuleIsEnabled(launchedCount: Int) {
+fun LaunchCounter(launchedCount: Int) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -411,6 +425,45 @@ fun ModuleIsEnabled(launchedCount: Int) {
         Text(
             text = launchedCount.toString(),
             fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+@Composable
+fun LoadingAnimation() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(48.dp),
+            color = MaterialTheme.colorScheme.primary,
+            strokeWidth = 4.dp
+        )
+    }
+}
+
+@Composable
+fun ModuleStatus(isHooked: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = stringResource(R.string.module_status),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            text = stringResource(
+                if (isHooked) R.string.module_status_active
+                else R.string.module_status_inactive
+            ),
+            color = if (isHooked) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.error,
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -479,7 +532,7 @@ fun PreviewSettingsScreen() {
     SettingsScreen(
         navController = null,
         settingsPrefs = LocalContext.current.getSharedPreferences(
-            SETTINGS_PREFS_NAME,
+            SETTINGS_PREFS,
             Context.MODE_PRIVATE
         ),
         vibrator = null
