@@ -10,17 +10,12 @@ object RemotePrefsHelper {
     private fun log(text: String) = LogHelper.log(RemotePrefsHelper::class.java.simpleName, text)
 
     fun withRemotePrefs(context: Context, block: SharedPreferences.() -> Unit) {
-        try {
-            val prefs = RemotePreferences(
-                context,
-                BuildConfig.APPLICATION_ID,
-                SharedPreferencesUtil.STATUS_PREFS,
-                true
-            )
-            block.invoke(prefs)
-        } catch (e: Exception) {
-            log("remote preferences failed")
-            log(e.message ?: "unknown")
-        }
+        val prefs = RemotePreferences(
+            context,
+            BuildConfig.APPLICATION_ID,
+            SharedPreferencesUtil.STATUS_PREFS,
+            true
+        )
+        block.invoke(prefs)
     }
 }
