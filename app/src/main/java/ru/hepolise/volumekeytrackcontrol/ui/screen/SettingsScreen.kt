@@ -209,18 +209,27 @@ fun SettingsScreen(
                 icon = if (isHooked) Icons.Default.Done else Icons.Default.Warning,
                 title = stringResource(R.string.module_info),
             ) {
-                if (context.isInstalledAfterReboot()) {
-                    ModuleStatus(false)
-                } else {
-                    if (isLoading && !isHooked && settingsPrefs != null) {
-                        LoadingAnimation()
-                    } else {
-                        ModuleStatus(isHooked)
+                when {
+                    context.isInstalledAfterReboot() -> {
+                        ModuleStatus(false)
+                        ModuleInitError()
                     }
-                    when {
-                        isHooked -> if (!StatusSysPropsHelper.isHooked) LaunchCounter(launchedCount)
-                        settingsPrefs == null -> ModuleIsNotEnabled()
-                        isBootCompleted -> ModuleInitError()
+
+                    isLoading && !isHooked && settingsPrefs != null -> {
+                        LoadingAnimation()
+                    }
+
+                    else -> {
+                        ModuleStatus(isHooked)
+
+                        when {
+                            isHooked && !StatusSysPropsHelper.isHooked -> LaunchCounter(
+                                launchedCount
+                            )
+
+                            settingsPrefs == null -> ModuleIsNotEnabled()
+                            isBootCompleted -> ModuleInitError()
+                        }
                     }
                 }
             }
