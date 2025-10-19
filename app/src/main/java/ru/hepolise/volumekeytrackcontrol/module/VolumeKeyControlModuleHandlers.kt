@@ -287,10 +287,12 @@ object VolumeKeyControlModuleHandlers {
             log("Sending ${this::class.simpleName}")
             isLongPress = true
             sendMediaButtonEventAndTriggerVibration(this)
-            RemotePrefsHelper.withRemotePrefs(context) {
-                val count = getLaunchedCount()
-                edit {
-                    putInt(LAUNCHED_COUNT, count + 1)
+            runCatching {
+                RemotePrefsHelper.withRemotePrefs(context) {
+                    val count = getLaunchedCount()
+                    edit {
+                        putInt(LAUNCHED_COUNT, count + 1)
+                    }
                 }
             }
         }
