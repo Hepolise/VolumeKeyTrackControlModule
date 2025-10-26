@@ -5,8 +5,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.21" apply false
 }
 
-val versionName = "1.16.0"
-val versionCode = 15
+val versionName = "1.16.1"
+val versionCode = 16
 
 rootProject.ext.set("appVersionName", versionName)
 rootProject.ext.set("appVersionCode", versionCode)
