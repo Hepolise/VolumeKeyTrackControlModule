@@ -14,7 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import ru.hepolise.volumekeytrackcontrol.ui.screen.AppFilterScreen
 import ru.hepolise.volumekeytrackcontrol.ui.screen.SettingsScreen
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
+import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 
 @Composable
 fun AppNavigation(settingsPrefs: SharedPreferences?, vibrator: Vibrator) {
@@ -54,7 +54,7 @@ fun AppNavigation(settingsPrefs: SharedPreferences?, vibrator: Vibrator) {
                     )
                 }
             ) { backStackEntry ->
-                val filterType = SharedPreferencesUtil.AppFilterType.fromKey(
+                val filterType = AppFilterType.fromKey(
                     backStackEntry.arguments?.getString("filterType")
                 )
                 AppFilterScreen(

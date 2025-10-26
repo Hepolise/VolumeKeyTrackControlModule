@@ -67,4 +67,7 @@ dependencies {
 
     // Xposed Framework API dependencies
     compileOnly("de.robv.android.xposed:api:82")
+
+    // RemotePreferences
+    implementation("com.crossbowffs.remotepreferences:remotepreferences:0.8")
 }

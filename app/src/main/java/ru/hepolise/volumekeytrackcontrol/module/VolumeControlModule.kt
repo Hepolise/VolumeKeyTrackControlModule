@@ -54,15 +54,16 @@ class VolumeControlModule : IXposedHookLoadPackage {
     @Throws(Throwable::class)
     override fun handleLoadPackage(lpparam: LoadPackageParam) {
         log("handleLoadPackage: ${lpparam.packageName}")
-        if (lpparam.packageName != "android") {
-            return
+        with(lpparam) {
+            when (packageName) {
+                "android" -> classLoader.init()
+            }
         }
-        init(lpparam.classLoader)
     }
 
-    private fun init(classLoader: ClassLoader) {
+    private fun ClassLoader.init() {
         initMethodSignatures.any { (params, logMessage) ->
-            tryHookInitMethod(classLoader, params, logMessage)
+            tryHookInitMethod(params, logMessage)
         }.also { hooked ->
             if (!hooked) {
                 log("Method hook failed for init!")
@@ -70,25 +71,30 @@ class VolumeControlModule : IXposedHookLoadPackage {
             }
         }
 
-        // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#4117
-        XposedHelpers.findAndHookMethod(
-            CLASS_PHONE_WINDOW_MANAGER,
-            classLoader,
-            "interceptKeyBeforeQueueing",
-            KeyEvent::class.java,
-            Int::class.javaPrimitiveType,
-            handleInterceptKeyBeforeQueueing
-        )
+        try {
+            // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#4117
+            XposedHelpers.findAndHookMethod(
+                CLASS_PHONE_WINDOW_MANAGER,
+                this,
+                "interceptKeyBeforeQueueing",
+                KeyEvent::class.java,
+                Int::class.javaPrimitiveType,
+                handleInterceptKeyBeforeQueueing
+            )
+        } catch (t: Throwable) {
+            log("Method hook failed for interceptKeyBeforeQueueing!")
+            t.message?.let { log(it) }
+        }
+
     }
 
-    private fun tryHookInitMethod(
-        classLoader: ClassLoader,
+    private fun ClassLoader.tryHookInitMethod(
         params: Array<Serializable>,
         logMessage: String
     ): Boolean {
         return try {
             XposedHelpers.findAndHookMethod(
-                CLASS_PHONE_WINDOW_MANAGER, classLoader, "init",
+                CLASS_PHONE_WINDOW_MANAGER, this, "init",
                 *params, handleConstructPhoneWindowManager
             )
             log(logMessage)

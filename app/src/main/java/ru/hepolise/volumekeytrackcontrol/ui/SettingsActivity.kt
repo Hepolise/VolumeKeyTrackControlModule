@@ -2,9 +2,7 @@ package ru.hepolise.volumekeytrackcontrol.ui
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
-import android.annotation.SuppressLint
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -13,6 +11,7 @@ import android.view.animation.AnticipateInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -21,17 +20,27 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import ru.hepolise.volumekeytrackcontrol.ui.navigation.AppNavigation
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.HOOK_PREFS_NAME
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS_NAME
+import ru.hepolise.volumekeytrackcontrol.util.LSPosedLogger
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSettingsSharedPreferences
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getStatusSharedPreferences
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isHooked
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
+import ru.hepolise.volumekeytrackcontrol.viewmodel.BootViewModel
+import ru.hepolise.volumekeytrackcontrol.viewmodel.BootViewModelFactory
 import kotlin.system.exitProcess
 
 
 class SettingsActivity : ComponentActivity() {
+
+    private val bootViewModel: BootViewModel by viewModels {
+        BootViewModelFactory(applicationContext)
+    }
 
     @Volatile
     private var shouldRemoveFromRecents = false
@@ -45,7 +54,16 @@ class SettingsActivity : ComponentActivity() {
         setUpSplashScreenAnimation()
         enableEdgeToEdge()
         setContent {
-            val prefs = tryLoadPrefs()
+            val hookPrefs = getStatusSharedPreferences()
+            val prefs = getSettingsSharedPreferences()
+
+            val isLoading by bootViewModel.isLoading.collectAsState()
+
+            LaunchedEffect(hookPrefs, prefs, isLoading) {
+                LSPosedLogger.log("Updating shouldRemoveFromRecents")
+                shouldRemoveFromRecents = !hookPrefs.isHooked() || prefs == null
+            }
+
             MaterialTheme(colorScheme = dynamicColorScheme(context = this)) {
                 AppNavigation(settingsPrefs = prefs, vibrator = getVibrator())
             }
@@ -57,17 +75,6 @@ class SettingsActivity : ComponentActivity() {
         if (shouldRemoveFromRecents) {
             exitProcess(0)
         }
-    }
-
-    private fun Context.tryLoadPrefs(): SharedPreferences? = try {
-        isHooked = getSharedPreferences(HOOK_PREFS_NAME, MODE_PRIVATE).isHooked()
-        shouldRemoveFromRecents = !isHooked
-        @SuppressLint("WorldReadableFiles")
-        @Suppress("DEPRECATION")
-        getSharedPreferences(SETTINGS_PREFS_NAME, MODE_WORLD_READABLE)
-    } catch (_: SecurityException) {
-        shouldRemoveFromRecents = true
-        null
     }
 
     private fun setUpSplashScreenAnimation() {

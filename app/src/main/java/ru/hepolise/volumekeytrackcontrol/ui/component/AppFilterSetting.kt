@@ -11,8 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
+import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.APP_FILTER_TYPE
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.AppFilterType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

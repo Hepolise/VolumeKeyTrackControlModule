@@ -1,10 +1,6 @@
 package ru.hepolise.volumekeytrackcontrol.module
 
-import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.hardware.display.DisplayManager
 import android.media.AudioManager
@@ -15,20 +11,23 @@ import android.os.PowerManager
 import android.os.Vibrator
 import android.view.Display
 import android.view.KeyEvent
+import androidx.core.content.edit
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
-import ru.hepolise.volumekeytrackcontrol.receiver.HookBroadcastReceiver
-import ru.hepolise.volumekeytrackcontrol.util.Constants
+import ru.hepolise.volumekeytrackcontrol.module.util.RemotePrefsHelper
+import ru.hepolise.volumekeytrackcontrol.module.util.StatusHelper
+import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LAUNCHED_COUNT
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLaunchedCount
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
-import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
 
 
 object VolumeKeyControlModuleHandlers {
@@ -82,15 +81,7 @@ object VolumeKeyControlModuleHandlers {
                 XposedHelpers.setAdditionalInstanceField(param.thisObject, event.field, runnable)
             }
 
-            val filter = IntentFilter(Intent.ACTION_USER_UNLOCKED)
-            context.registerReceiver(object : BroadcastReceiver() {
-                override fun onReceive(ctx: Context, intent: Intent) {
-                    context.sendBroadcast {
-                        putExtra(Constants.HOOKED, true)
-                    }
-                    ctx.unregisterReceiver(this)
-                }
-            }, filter)
+            StatusHelper.handleSuccessHook(context)
         }
     }
 
@@ -224,9 +215,9 @@ object VolumeKeyControlModuleHandlers {
         val apps = prefs.getApps(filterType)
         return mediaControllers?.find {
             when (filterType) {
-                SharedPreferencesUtil.AppFilterType.DISABLED -> true
-                SharedPreferencesUtil.AppFilterType.WHITE_LIST -> it.packageName in apps
-                SharedPreferencesUtil.AppFilterType.BLACK_LIST -> it.packageName !in apps
+                AppFilterType.DISABLED -> true
+                AppFilterType.WHITE_LIST -> it.packageName in apps
+                AppFilterType.BLACK_LIST -> it.packageName !in apps
             }
         }?.also { log("Chosen media controller: ${it.packageName}") }
     }
@@ -253,21 +244,6 @@ object VolumeKeyControlModuleHandlers {
             }
             vibrator.triggerVibration()
         }
-    }
-
-    private fun Context.sendBroadcast(block: Intent.() -> Unit) {
-        val modulePackage = BuildConfig.APPLICATION_ID
-
-        val intent = Intent().apply {
-            component = ComponentName(
-                modulePackage,
-                HookBroadcastReceiver::class.java.name
-            )
-            action = Constants.HOOK_UPDATE
-            block()
-            setPackage(modulePackage)
-        }
-        sendBroadcast(intent)
     }
 
     private fun MethodHookParam.delay(event: MediaEvent) {
@@ -311,8 +287,13 @@ object VolumeKeyControlModuleHandlers {
             log("Sending ${this::class.simpleName}")
             isLongPress = true
             sendMediaButtonEventAndTriggerVibration(this)
-            context.sendBroadcast {
-                putExtra(Constants.INCREMENT_LAUNCH_COUNT, true)
+            runCatching {
+                RemotePrefsHelper.withRemotePrefs(context) {
+                    val count = getLaunchedCount()
+                    edit {
+                        putInt(LAUNCHED_COUNT, count + 1)
+                    }
+                }
             }
         }
 
