@@ -25,6 +25,8 @@
     <string name="vibration_amplitude_dialog_title">Vibration Amplitude</string>
     <string name="test_vibration">Test Vibration</string>
 
+    <string name="vibration_not_available">Vibration is not available on this device</string>
+
     <string name="app_filter">App Filter</string>
     <string name="app_filter_disabled">Disabled</string>
     <string name="app_filter_white_list">White List</string>
