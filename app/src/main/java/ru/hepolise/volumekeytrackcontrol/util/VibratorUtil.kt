@@ -31,10 +31,14 @@ object VibratorUtil {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrationType != VibrationType.Manual) {
             val vibe = VibrationEffect.createPredefined(vibrationType.value)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val attributes = VibrationAttributes.Builder()
-                    .setUsage(VibrationAttributes.USAGE_TOUCH)
-                    .build()
-                this.vibrate(vibe, attributes)
+                try {
+                    val attributes = VibrationAttributes.Builder()
+                        .setUsage(VibrationAttributes.USAGE_ALARM)
+                        .build()
+                    this.vibrate(vibe, attributes)
+                } catch (_: Exception) {
+                    this.vibrate(vibe)
+                }
             } else {
                 this.vibrate(vibe)
             }
