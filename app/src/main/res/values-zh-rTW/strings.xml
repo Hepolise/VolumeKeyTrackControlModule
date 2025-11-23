@@ -24,6 +24,8 @@
     <string name="vibration_amplitude_dialog_title">震動強度</string>
     <string name="test_vibration">測試震動</string>
 
+    <string name="vibration_not_available">此裝置不支援震動</string>
+
     <string name="app_filter">應用過濾</string>
     <string name="app_filter_disabled">禁用</string>
     <string name="app_filter_white_list">允許清單</string>
