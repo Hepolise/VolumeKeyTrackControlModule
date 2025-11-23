@@ -44,6 +44,17 @@
             </intent-filter>
         </receiver>
 
+        <service
+            android:name="ru.hepolise.volumekeytrackcontrol.service.RewindActionTileService"
+            android:exported="true"
+            android:label="@string/long_press_action"
+            android:icon="@drawable/ic_skip_next_48dp"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <!-- metadata -->
         <meta-data
             android:name="xposedmodule"

@@ -19,6 +19,8 @@ object SharedPreferencesUtil {
     const val VIBRATION_LENGTH = "vibrationLength"
     const val VIBRATION_AMPLITUDE = "vibrationAmplitude"
     const val LONG_PRESS_DURATION = "longPressDuration"
+    const val REWIND_ACTION_TYPE = "rewindActionType"
+    const val REWIND_DURATION = "rewindDuration"
     const val IS_SWAP_BUTTONS = "isSwapButtons"
     const val APP_FILTER_TYPE = "appFilterType"
     const val WHITE_LIST_APPS = "whiteListApps"
@@ -33,6 +35,8 @@ object SharedPreferencesUtil {
     const val VIBRATION_LENGTH_DEFAULT_VALUE = 50
     const val VIBRATION_AMPLITUDE_DEFAULT_VALUE = 128
     val LONG_PRESS_DURATION_DEFAULT_VALUE = ViewConfiguration.getLongPressTimeout()
+    val REWIND_ACTION_TYPE_DEFAULT_VALUE = RewindActionType.TRACK_CHANGE
+    const val REWIND_DURATION_DEFAULT_VALUE = 5
     const val IS_SWAP_BUTTONS_DEFAULT_VALUE = false
     val APP_FILTER_TYPE_DEFAULT_VALUE = AppFilterType.DISABLED.key
 
@@ -56,6 +60,18 @@ object SharedPreferencesUtil {
     fun SharedPreferences?.getLongPressDuration(): Int {
         val defaultValue = LONG_PRESS_DURATION_DEFAULT_VALUE
         return this?.getInt(LONG_PRESS_DURATION, defaultValue) ?: defaultValue
+    }
+
+    fun SharedPreferences?.getRewindActionType(): RewindActionType {
+        val defaultValue = REWIND_ACTION_TYPE_DEFAULT_VALUE.name
+        return RewindActionType.valueOf(
+            this?.getString(REWIND_ACTION_TYPE, defaultValue) ?: defaultValue
+        )
+    }
+
+    fun SharedPreferences?.getRewindDuration(): Int {
+        val defaultValue = REWIND_DURATION_DEFAULT_VALUE
+        return this?.getInt(REWIND_DURATION, defaultValue) ?: defaultValue
     }
 
     fun SharedPreferences?.isSwapButtons(): Boolean {
