@@ -3,6 +3,7 @@ package ru.hepolise.volumekeytrackcontrol.util
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
+import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -27,15 +28,28 @@ object VibratorUtil {
     fun Vibrator.triggerVibration(prefs: SharedPreferences? = SharedPreferencesUtil.prefs()) {
         val vibrationType = prefs.getVibrationType()
         if (vibrationType == VibrationType.Disabled) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrationType != VibrationType.Manual) {
-            this.vibrate(VibrationEffect.createPredefined(vibrationType.value))
+
+        val vibe =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrationType != VibrationType.Manual) {
+                VibrationEffect.createPredefined(vibrationType.value)
         } else {
-            this.vibrate(
                 VibrationEffect.createOneShot(
                     prefs.getVibrationLength().toLong(),
                     prefs.getVibrationAmplitude()
                 )
-            )
+            }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                val attributes = VibrationAttributes.Builder()
+                    .setUsage(VibrationAttributes.USAGE_ALARM)
+                    .build()
+                this.vibrate(vibe, attributes)
+            } catch (_: Exception) {
+                this.vibrate(vibe)
+            }
+        } else {
+            this.vibrate(vibe)
         }
     }
 }
