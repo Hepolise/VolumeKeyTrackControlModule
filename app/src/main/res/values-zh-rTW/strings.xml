@@ -47,6 +47,13 @@
 
     <string name="swap_buttons">交換上下曲按鈕</string>
 
+    <string name="track_change">切換曲目</string>
+    <string name="long_press_action">長按動作</string>
+    <string name="rewind">倒轉</string>
+    <string name="rewind_duration">倒轉時長：%d 秒</string>
+    <string name="rewind_duration_dialog_title">設定倒轉時長</string>
+    <string name="edit_rewind_duration">編輯倒轉時長</string>
+
     <string name="settings_reset">重設設定</string>
     <string name="settings_reset_message">確定要重設設定嗎？</string>
     <string name="settings_reset_toast">設定已恢復預設</string>

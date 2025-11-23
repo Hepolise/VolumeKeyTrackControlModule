@@ -52,6 +52,13 @@
 
     <string name="swap_buttons">Поменять кнопки Вверх/Вниз для переключения</string>
 
+    <string name="track_change">Переключение трека</string>
+    <string name="long_press_action">Действие при долгом нажатии</string>
+    <string name="rewind">Перемотка</string>
+    <string name="rewind_duration">Длительность перемотки: %d сек</string>
+    <string name="rewind_duration_dialog_title">Установить длительность перемотки</string>
+    <string name="edit_rewind_duration">Изменить длительность перемотки</string>
+
     <string name="settings_reset">Сбросить настройки</string>
     <string name="settings_reset_message">Вы уверены, что хотите сбросить настройки?</string>
     <string name="settings_reset_toast">Настройки сброшены по умолчанию</string>

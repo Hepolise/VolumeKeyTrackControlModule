@@ -93,6 +93,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import ru.hepolise.volumekeytrackcontrol.ui.component.AppFilterSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
+import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSettingData
 import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
@@ -103,12 +104,17 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.APP_FILTER_T
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.EFFECT_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION_DEFAULT_VALUE
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_ACTION_TYPE
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_ACTION_TYPE_DEFAULT_VALUE
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_DURATION_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLaunchedCount
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindActionType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getStatusSharedPreferences
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
@@ -140,6 +146,9 @@ fun SettingsScreen(
     val isLoading by bootViewModel.isLoading.collectAsState()
 
     var longPressDuration by remember { mutableIntStateOf(settingsPrefs.getLongPressDuration()) }
+    var rewindActionType by remember { mutableStateOf(settingsPrefs.getRewindActionType()) }
+    var rewindDuration by remember { mutableIntStateOf(settingsPrefs.getRewindDuration()) }
+
     var vibrationType by remember { mutableStateOf(settingsPrefs.getVibrationType()) }
     var vibrationLength by remember { mutableIntStateOf(settingsPrefs.getVibrationLength()) }
     var vibrationAmplitude by remember { mutableIntStateOf(settingsPrefs.getVibrationAmplitude()) }
@@ -163,6 +172,20 @@ fun SettingsScreen(
         statusPrefs.registerOnSharedPreferenceChangeListener(listener)
         onDispose {
             statusPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
+    settingsPrefs?.also {
+        DisposableEffect(Unit) {
+            val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                if (key == REWIND_ACTION_TYPE) {
+                    rewindActionType = settingsPrefs.getRewindActionType()
+                }
+            }
+            settingsPrefs.registerOnSharedPreferenceChangeListener(listener)
+            onDispose {
+                settingsPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+            }
         }
     }
 
@@ -239,8 +262,16 @@ fun SettingsScreen(
                     icon = Icons.Default.Settings,
                     title = stringResource(R.string.long_press_settings)
                 ) {
-                    LongPressSetting(longPressDuration, settingsPrefs) {
-                        longPressDuration = it
+                    LongPressSetting(
+                        LongPressSettingData(
+                            longPressDuration,
+                            rewindActionType,
+                            rewindDuration
+                        ), settingsPrefs
+                    ) {
+                        longPressDuration = it.longPressDuration
+                        rewindActionType = it.rewindActionType
+                        rewindDuration = it.rewindDuration
                     }
                     SwapButtonsSetting(
                         isSwapButtons = isSwapButtons,
@@ -294,6 +325,8 @@ fun SettingsScreen(
                                 vibrationLength = VIBRATION_LENGTH_DEFAULT_VALUE
                                 vibrationAmplitude = VIBRATION_AMPLITUDE_DEFAULT_VALUE
                                 longPressDuration = LONG_PRESS_DURATION_DEFAULT_VALUE
+                                rewindActionType = REWIND_ACTION_TYPE_DEFAULT_VALUE
+                                rewindDuration = REWIND_DURATION_DEFAULT_VALUE
                                 isSwapButtons = IS_SWAP_BUTTONS_DEFAULT_VALUE
                                 appFilterType = AppFilterType.fromKey(
                                     APP_FILTER_TYPE_DEFAULT_VALUE

@@ -50,6 +50,13 @@
 
     <string name="swap_buttons">Swap Up/Down buttons for skipping</string>
 
+    <string name="long_press_action">Long press action</string>
+    <string name="track_change">Track change</string>
+    <string name="rewind">Rewind</string>
+    <string name="rewind_duration">Rewind duration: %d sec</string>
+    <string name="rewind_duration_dialog_title">Set rewind duration</string>
+    <string name="edit_rewind_duration">Edit rewind duration</string>
+
     <string name="settings_reset">Reset settings</string>
     <string name="settings_reset_message">Are you sure you want to reset settings?</string>
     <string name="settings_reset_toast">Settings are reset to default</string>

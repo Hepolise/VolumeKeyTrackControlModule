@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.hardware.display.DisplayManager
 import android.media.AudioManager
+import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.PlaybackState
 import android.os.Handler
@@ -19,15 +20,20 @@ import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
 import ru.hepolise.volumekeytrackcontrol.module.util.RemotePrefsHelper
 import ru.hepolise.volumekeytrackcontrol.module.util.StatusHelper
 import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
+import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LAUNCHED_COUNT
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLaunchedCount
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindActionType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
+import kotlin.math.max
+import kotlin.math.min
 
 
 object VolumeKeyControlModuleHandlers {
@@ -43,6 +49,7 @@ object VolumeKeyControlModuleHandlers {
     private lateinit var powerManager: PowerManager
     private lateinit var displayManager: DisplayManager
     private lateinit var vibrator: Vibrator
+    private lateinit var sessionHelper: Any
 
     private var prefs: SharedPreferences? = null
 
@@ -129,31 +136,35 @@ object VolumeKeyControlModuleHandlers {
         displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager?
             ?: throw NullPointerException("Unable to obtain display service")
         vibrator = getVibrator()
+        sessionHelper = getMediaSessionLegacyHelper()
     }
 
     private fun initPrefs() {
         prefs = SharedPreferencesUtil.prefs()
     }
 
-    private fun Context.initControllers() {
+    private fun Context.getMediaSessionLegacyHelper(): Any {
         val context = this
         val classLoader = javaClass.classLoader
         val mediaSessionHelperClass = XposedHelpers.findClass(
             CLASS_MEDIA_SESSION_LEGACY_HELPER,
             classLoader
         )
-        val helper = XposedHelpers.callStaticMethod(
+        return XposedHelpers.callStaticMethod(
             mediaSessionHelperClass,
             "getHelper",
             context
         )
-        val mSessionManager = XposedHelpers.getObjectField(helper, "mSessionManager")
+    }
+
+    private fun Context.initControllers() {
+        val sessionManager = XposedHelpers.getObjectField(sessionHelper, "mSessionManager")
         val componentNameClass =
             XposedHelpers.findClass(CLASS_COMPONENT_NAME, classLoader)
 
         @Suppress("UNCHECKED_CAST")
         mediaControllers = XposedHelpers.callMethod(
-            mSessionManager,
+            sessionManager,
             "getActiveSessions",
             arrayOf(componentNameClass),
             null
@@ -191,7 +202,7 @@ object VolumeKeyControlModuleHandlers {
         log("Volume unpressed action received, down: $isDownPressed, up: $isUpPressed")
         abortAll()
         if (!isLongPress && getMediaController().isMusicActive()) {
-            log("Adjusting music volume")
+            log("Adjusting stream volume")
             keyHelper.adjustStreamVolume(audioManager)
         }
     }
@@ -239,8 +250,29 @@ object VolumeKeyControlModuleHandlers {
                     if (controller.isMusicActive()) controls.pause() else controls.play()
                 }
 
-                MediaEvent.Next -> controls.skipToNext()
-                MediaEvent.Prev -> controls.skipToPrevious()
+                MediaEvent.Next -> {
+                    if (prefs.getRewindActionType() == RewindActionType.TRACK_CHANGE) {
+                        controls.skipToNext()
+                    } else {
+                        val currentPosition = controller.playbackState?.position ?: 0
+                        val duration =
+                            controller.metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION)
+                                ?: Long.MAX_VALUE
+                        val newPosition =
+                            min(currentPosition + prefs.getRewindDuration() * 1000, duration)
+                        controls.seekTo(newPosition)
+                    }
+                }
+
+                MediaEvent.Prev -> {
+                    if (prefs.getRewindActionType() == RewindActionType.TRACK_CHANGE) {
+                        controls.skipToPrevious()
+                    } else {
+                        val currentPosition = controller.playbackState?.position ?: 0
+                        val newPosition = max(currentPosition - prefs.getRewindDuration() * 1000, 0)
+                        controls.seekTo(newPosition)
+                    }
+                }
             }
             vibrator.triggerVibration()
         }
@@ -339,11 +371,32 @@ object VolumeKeyControlModuleHandlers {
         }
 
         fun adjustStreamVolume(audioManager: AudioManager) {
-            val direction = when (origKey) {
-                Key.UP -> AudioManager.ADJUST_RAISE
-                Key.DOWN -> AudioManager.ADJUST_LOWER
+            try {
+                val direction = when (origKey) {
+                    Key.UP -> KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_UP)
+                    Key.DOWN -> KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN)
+                }
+
+                XposedHelpers.callMethod(
+                    sessionHelper,
+                    "sendVolumeKeyEvent",
+                    arrayOf(
+                        KeyEvent::class.java,
+                        Int::class.javaPrimitiveType,
+                        Boolean::class.javaPrimitiveType
+                    ),
+                    direction, AudioManager.USE_DEFAULT_STREAM_TYPE, false
+                )
+            } catch (e: Exception) {
+                log("Failed to adjust stream volume: ${e.message}")
+                log("Falling back to adjustStreamVolume")
+
+                val direction = when (origKey) {
+                    Key.UP -> AudioManager.ADJUST_RAISE
+                    Key.DOWN -> AudioManager.ADJUST_LOWER
+                }
+                audioManager.adjustStreamVolume(AudioManager.USE_DEFAULT_STREAM_TYPE, direction, 0)
             }
-            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
         }
 
         private companion object {
