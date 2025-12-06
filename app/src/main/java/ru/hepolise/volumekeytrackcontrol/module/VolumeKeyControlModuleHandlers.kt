@@ -203,7 +203,7 @@ object VolumeKeyControlModuleHandlers {
         abortAll()
         if (!isLongPress && getMediaController().isMusicActive()) {
             log("Adjusting stream volume")
-            keyHelper.adjustStreamVolume(audioManager)
+            keyHelper.adjustStreamVolume(this)
         }
     }
 
@@ -370,14 +370,14 @@ object VolumeKeyControlModuleHandlers {
             }
         }
 
-        fun adjustStreamVolume(audioManager: AudioManager) {
+        fun adjustStreamVolume(param: MethodHookParam) {
             try {
                 val keyCode = when (origKey) {
                     Key.UP -> KeyEvent.KEYCODE_VOLUME_UP
                     Key.DOWN -> KeyEvent.KEYCODE_VOLUME_DOWN
                 }
 
-                fun send(action: Int) {
+                fun sendEvent(action: Int) {
                     XposedHelpers.callMethod(
                         sessionHelper,
                         "sendVolumeKeyEvent",
@@ -392,9 +392,10 @@ object VolumeKeyControlModuleHandlers {
                     )
                 }
 
-                send(KeyEvent.ACTION_DOWN)
-                Thread.sleep(20)
-                send(KeyEvent.ACTION_UP)
+                sendEvent(KeyEvent.ACTION_DOWN)
+                param.getHandler().postDelayed({
+                    sendEvent(KeyEvent.ACTION_UP)
+                }, 20)
             } catch (e: Exception) {
                 log("Failed to adjust stream volume: ${e.message}")
                 log("Falling back to adjustStreamVolume")
