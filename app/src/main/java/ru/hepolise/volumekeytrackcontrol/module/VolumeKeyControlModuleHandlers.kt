@@ -374,7 +374,7 @@ object VolumeKeyControlModuleHandlers {
             try {
                 val keyCode = when (origKey) {
                     Key.UP -> KeyEvent.KEYCODE_VOLUME_UP
-                    Key.DOWN -> KeyEvent.KEYCODE_VOLUME_UP
+                    Key.DOWN -> KeyEvent.KEYCODE_VOLUME_DOWN
                 }
 
                 fun send(action: Int) {
