@@ -34,11 +34,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -92,14 +94,16 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import ru.hepolise.volumekeytrackcontrol.ui.component.AppFilterSetting
+import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressActionSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
-import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSettingData
+import ru.hepolise.volumekeytrackcontrol.ui.component.RewindSettingData
 import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
 import ru.hepolise.volumekeytrackcontrol.ui.isInstalledAfterReboot
 import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.Constants
+import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.APP_FILTER_TYPE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.EFFECT_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS_DEFAULT_VALUE
@@ -263,15 +267,10 @@ fun SettingsScreen(
                     title = stringResource(R.string.long_press_settings)
                 ) {
                     LongPressSetting(
-                        LongPressSettingData(
-                            longPressDuration,
-                            rewindActionType,
-                            rewindDuration
-                        ), settingsPrefs
+                        longPressDuration,
+                        settingsPrefs
                     ) {
-                        longPressDuration = it.longPressDuration
-                        rewindActionType = it.rewindActionType
-                        rewindDuration = it.rewindDuration
+                        longPressDuration = it
                     }
                     SwapButtonsSetting(
                         isSwapButtons = isSwapButtons,
@@ -282,7 +281,25 @@ fun SettingsScreen(
                 }
 
                 SettingsCard(
-                    icon = Icons.Default.Notifications,
+                    icon = when (rewindActionType) {
+                        RewindActionType.TRACK_CHANGE -> Icons.Default.SkipNext
+                        RewindActionType.REWIND -> Icons.Default.FastForward
+                    },
+                    title = stringResource(R.string.long_press_action)
+                ) {
+                    LongPressActionSetting(
+                        RewindSettingData(
+                            rewindActionType,
+                            rewindDuration
+                        ), settingsPrefs
+                    ) {
+                        rewindActionType = it.rewindActionType
+                        rewindDuration = it.rewindDuration
+                    }
+                }
+
+                SettingsCard(
+                    icon = Icons.Default.Vibration,
                     title = stringResource(R.string.vibration_settings)
                 ) {
                     VibrationEffectSetting(

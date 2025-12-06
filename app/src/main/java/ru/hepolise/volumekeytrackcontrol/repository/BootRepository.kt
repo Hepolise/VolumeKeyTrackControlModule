@@ -12,6 +12,7 @@ import ru.hepolise.volumekeytrackcontrol.util.LSPosedLogger
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LAST_BOOT_COMPLETED_TIME
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getStatusSharedPreferences
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isBootCompleted
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isHooked
 import ru.hepolise.volumekeytrackcontrol.util.StatusSysPropsHelper
 
 class BootRepository private constructor(private val sharedPreferences: SharedPreferences) {
@@ -29,6 +30,10 @@ class BootRepository private constructor(private val sharedPreferences: SharedPr
 
     fun isBootCompleted(): Boolean {
         return sharedPreferences.isBootCompleted()
+    }
+
+    fun isHooked(): Boolean {
+        return StatusSysPropsHelper.isHooked || sharedPreferences.isHooked()
     }
 
     fun setBootCompleted() {
