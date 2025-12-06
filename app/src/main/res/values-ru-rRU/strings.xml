@@ -37,16 +37,16 @@
     <string name="max_apps_limit">Можно выбрать не более %1$d приложений.</string>
     <string name="clear">Очистить</string>
     <plurals name="app_filter_clear_apps">
-        <item quantity="one">Удалить из списка %d приложение</item>
-        <item quantity="few">Удалить из списка %d приложения</item>
-        <item quantity="many">Удалить из списка %d приложений</item>
-        <item quantity="other">Удалить из списка %d приложения</item>
+        <item quantity="one">Очистить %d приложение</item>
+        <item quantity="few">Очистить %d приложения</item>
+        <item quantity="many">Очистить %d приложений</item>
+        <item quantity="other">Очистить %d приложения</item>
     </plurals>
     <plurals name="app_filter_clear_message">
-        <item quantity="one">Удалить из списка %d приложение?</item>
-        <item quantity="few">Удалить из списка %d приложения?</item>
-        <item quantity="many">Удалить из списка %d приложений?</item>
-        <item quantity="other">Удалить из списка %d приложения?</item>
+        <item quantity="one">Очистить %d приложение?</item>
+        <item quantity="few">Очистить %d приложения?</item>
+        <item quantity="many">Очистить %d приложений?</item>
+        <item quantity="other">Очистить %d приложения?</item>
     </plurals>
 
     <string name="long_press_duration">Длительность: %d мс</string>
@@ -54,7 +54,7 @@
 
     <string name="swap_buttons">Поменять кнопки Вверх/Вниз для переключения</string>
 
-    <string name="track_change">Переключение трека</string>
+    <string name="track_change">Переключение</string>
     <string name="long_press_action">Действие при долгом нажатии</string>
     <string name="rewind">Перемотка</string>
     <string name="rewind_duration">Длительность перемотки: %d сек</string>
