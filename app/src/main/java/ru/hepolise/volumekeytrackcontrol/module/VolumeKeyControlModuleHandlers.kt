@@ -372,21 +372,29 @@ object VolumeKeyControlModuleHandlers {
 
         fun adjustStreamVolume(audioManager: AudioManager) {
             try {
-                val direction = when (origKey) {
-                    Key.UP -> KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_UP)
-                    Key.DOWN -> KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_VOLUME_DOWN)
+                val keyCode = when (origKey) {
+                    Key.UP -> KeyEvent.KEYCODE_VOLUME_UP
+                    Key.DOWN -> KeyEvent.KEYCODE_VOLUME_UP
                 }
 
-                XposedHelpers.callMethod(
-                    sessionHelper,
-                    "sendVolumeKeyEvent",
-                    arrayOf(
-                        KeyEvent::class.java,
-                        Int::class.javaPrimitiveType,
-                        Boolean::class.javaPrimitiveType
-                    ),
-                    direction, AudioManager.USE_DEFAULT_STREAM_TYPE, false
-                )
+                fun send(action: Int) {
+                    XposedHelpers.callMethod(
+                        sessionHelper,
+                        "sendVolumeKeyEvent",
+                        arrayOf(
+                            KeyEvent::class.java,
+                            Int::class.javaPrimitiveType,
+                            Boolean::class.javaPrimitiveType
+                        ),
+                        KeyEvent(action, keyCode),
+                        AudioManager.USE_DEFAULT_STREAM_TYPE,
+                        false
+                    )
+                }
+
+                send(KeyEvent.ACTION_DOWN)
+                Thread.sleep(20)
+                send(KeyEvent.ACTION_UP)
             } catch (e: Exception) {
                 log("Failed to adjust stream volume: ${e.message}")
                 log("Falling back to adjustStreamVolume")
