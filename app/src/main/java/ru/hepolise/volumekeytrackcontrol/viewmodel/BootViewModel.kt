@@ -49,7 +49,7 @@ class BootViewModel(
             delay(1_000)
             StatusSysPropsHelper.refreshIsHooked()
 
-            if (StatusSysPropsHelper.isHooked) {
+            if (bootRepository.isHooked()) {
                 LSPosedLogger.log("Boot completed - hook detected")
                 bootRepository.setBootCompleted()
                 return
