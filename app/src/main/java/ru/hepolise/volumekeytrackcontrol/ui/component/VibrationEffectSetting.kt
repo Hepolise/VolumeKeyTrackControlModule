@@ -61,7 +61,6 @@ private val VibrationEffectTitles = VibrationType.values.associateWith {
                     VibrationType.DoubleClick -> R.string.vibration_effect_double_click
                     VibrationType.HeavyClick -> R.string.vibration_effect_heavy_click
                     VibrationType.Tick -> R.string.vibration_effect_tick
-                    else -> throw IllegalStateException("Unknown VibrationType: $it")
                 }
             } else {
                 throw IllegalStateException("VibrationType is not supported on this API level")
