@@ -16,8 +16,10 @@ import androidx.core.content.edit
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XC_MethodHook.MethodHookParam
 import de.robv.android.xposed.XposedHelpers
+import kotlinx.coroutines.Runnable
 import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
 import ru.hepolise.volumekeytrackcontrol.module.util.RemotePrefsHelper
+import ru.hepolise.volumekeytrackcontrol.module.util.State
 import ru.hepolise.volumekeytrackcontrol.module.util.StatusHelper
 import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
@@ -29,6 +31,7 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLaunchedC
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindDuration
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isAddSecondaryAction
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
@@ -41,9 +44,7 @@ object VolumeKeyControlModuleHandlers {
         "android.media.session.MediaSessionLegacyHelper"
     private const val CLASS_COMPONENT_NAME = "android.content.ComponentName"
 
-    private var isLongPress = false
-    private var isDownPressed = false
-    private var isUpPressed = false
+    private var state = State()
 
     private lateinit var audioManager: AudioManager
     private lateinit var powerManager: PowerManager
@@ -72,6 +73,7 @@ object VolumeKeyControlModuleHandlers {
                     t.printStackTrace()
                     return
                 }
+                updateFlags(event)
                 if (needHook(event)) {
                     doHook(event)
                 }
@@ -84,8 +86,12 @@ object VolumeKeyControlModuleHandlers {
             log("handleConstructPhoneWindowManager: initialized")
             val context = param.getContext()
             MediaEvent.entries.forEach { event ->
-                val runnable = Runnable { event.handle(context) }
-                XposedHelpers.setAdditionalInstanceField(param.thisObject, event.field, runnable)
+                val runnable = Runnable { event.handle(param) }
+                XposedHelpers.setAdditionalInstanceField(
+                    param.thisObject,
+                    event.fieldName,
+                    runnable
+                )
             }
 
             StatusHelper.handleSuccessHook(context)
@@ -98,13 +104,13 @@ object VolumeKeyControlModuleHandlers {
         log("audioManager mode: ${audioManager.mode}, required: ${AudioManager.MODE_NORMAL}")
         log("keyCode: ${keyCode}, required: ${KeyEvent.KEYCODE_VOLUME_DOWN} or ${KeyEvent.KEYCODE_VOLUME_UP}")
         log("displayInteractive: ${isDisplayInteractive()}, required: false")
-        log("isDownPressed: $isDownPressed")
-        log("isUpPressed: $isUpPressed")
+//        log("isDownPressed: $isDownPressed")
+//        log("isUpPressed: $isUpPressed")
         log("hasActiveMediaController: ${hasActiveMediaController()}, required: true")
         val needHook =
             (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP)
                     && event.flags and KeyEvent.FLAG_FROM_SYSTEM != 0
-                    && (!isDisplayInteractive() || isDownPressed || isUpPressed)
+                    && (!isDisplayInteractive()/* || isDownPressed || isUpPressed*/)
                     && audioManager.mode == AudioManager.MODE_NORMAL
                     && hasActiveMediaController()
         log("needHook: $needHook")
@@ -172,26 +178,36 @@ object VolumeKeyControlModuleHandlers {
     }
 
     private fun MethodHookParam.doHook(event: KeyEvent) {
-        val action = Action.entries.single { it.actionCode == event.action }
-        val keyHelper = KeyHelper(event.keyCode)
-        keyHelper.updateFlags(action)
-        when (action) {
-            Action.PRESSED -> handlePressedAction(keyHelper)
-            Action.UNPRESSED -> handleUnpressedAction(keyHelper)
+        event.applyForAction {
+            val pendingEvent = state.pendingEvent
+            if (pendingEvent != null) {
+                log("Already having a pending event, using it")
+                updateState { this.pendingEvent = null }
+                pendingEvent.doHandle(this@doHook)
+            } else {
+                when (it) {
+                    Action.PRESSED -> handlePressedAction(this)
+                    Action.UNPRESSED -> handleUnpressedAction(this)
+                }
+            }
+            setResult(0)
         }
-        setResult(0)
     }
 
     private fun MethodHookParam.handlePressedAction(keyHelper: KeyHelper) {
-        log("Volume pressed action received, down: $isDownPressed, up: $isUpPressed")
-        isLongPress = false
-        if (isUpPressed && isDownPressed) {
+        log("Volume pressed action received, down: ${state.isDownPressed}, up: ${state.isUpPressed}")
+        updateState { isLongPress = false }
+        if (state.isUpPressed && state.isDownPressed) {
             log("Aborting delayed skip")
             abortSkip()
         } else {
             if (getMediaController().isMusicActive()) {
                 log("Music is active, creating delayed skip")
-                delay(keyHelper.mediaEvent)
+                val event = keyHelper.getMatchingMediaEvent()
+                delay(event)
+                event.getSecondaryEvent()?.also {
+                    delay(it, 2.3)
+                }
             }
             log("Creating delayed play pause")
             delay(MediaEvent.PlayPause)
@@ -199,11 +215,13 @@ object VolumeKeyControlModuleHandlers {
     }
 
     private fun MethodHookParam.handleUnpressedAction(keyHelper: KeyHelper) {
-        log("Volume unpressed action received, down: $isDownPressed, up: $isUpPressed")
+        log("Volume unpressed action received, down: ${state.isDownPressed}, up: ${state.isUpPressed}")
         abortAll()
-        if (!isLongPress && getMediaController().isMusicActive()) {
+        val mediaController = getMediaController()
+        log("isMusicActive: ${mediaController.isMusicActive()}")
+        if (!state.isLongPress && mediaController.isMusicActive()) {
             log("Adjusting stream volume")
-            keyHelper.adjustStreamVolume(this)
+            keyHelper.adjustStreamVolume(getHandler())
         }
     }
 
@@ -242,47 +260,11 @@ object VolumeKeyControlModuleHandlers {
         else -> false
     }
 
-    private fun sendMediaButtonEventAndTriggerVibration(mediaEvent: MediaEvent) {
-        getMediaController()?.also { controller ->
-            val controls = controller.transportControls
-            when (mediaEvent) {
-                MediaEvent.PlayPause -> {
-                    if (controller.isMusicActive()) controls.pause() else controls.play()
-                }
-
-                MediaEvent.Next -> {
-                    if (prefs.getRewindActionType() == RewindActionType.TRACK_CHANGE) {
-                        controls.skipToNext()
-                    } else {
-                        val currentPosition = controller.playbackState?.position ?: 0
-                        val duration =
-                            controller.metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION)
-                                ?: Long.MAX_VALUE
-                        val newPosition =
-                            min(currentPosition + prefs.getRewindDuration() * 1000, duration)
-                        controls.seekTo(newPosition)
-                    }
-                }
-
-                MediaEvent.Prev -> {
-                    if (prefs.getRewindActionType() == RewindActionType.TRACK_CHANGE) {
-                        controls.skipToPrevious()
-                    } else {
-                        val currentPosition = controller.playbackState?.position ?: 0
-                        val newPosition = max(currentPosition - prefs.getRewindDuration() * 1000, 0)
-                        controls.seekTo(newPosition)
-                    }
-                }
-            }
-            vibrator.triggerVibration()
-        }
-    }
-
-    private fun MethodHookParam.delay(event: MediaEvent) {
+    private fun MethodHookParam.delay(event: MediaEvent, multiplier: Double = 1.0) {
         val handler = getHandler()
         handler.postDelayed(
-            getRunnable(event.field),
-            prefs.getLongPressDuration().toLong()
+            getRunnable(event.fieldName),
+            (prefs.getLongPressDuration().toDouble() * multiplier).toLong()
         )
     }
 
@@ -299,7 +281,7 @@ object VolumeKeyControlModuleHandlers {
     private fun MethodHookParam.abortEvents(vararg events: MediaEvent) {
         val handler = getHandler()
         events.forEach { event ->
-            handler.removeCallbacks(getRunnable(event.field))
+            handler.removeCallbacks(getRunnable(event.fieldName))
         }
     }
 
@@ -313,46 +295,153 @@ object VolumeKeyControlModuleHandlers {
     private fun MethodHookParam.getObjectField(fieldName: String) =
         XposedHelpers.getObjectField(thisObject, fieldName)
 
-    private sealed class MediaEvent(val field: String) {
+    sealed class MediaEvent {
+        val fieldName =
+            "_volumeKeyControlRunnable_${javaClass.simpleName.replaceFirstChar { it.lowercase() }}"
 
-        open fun handle(context: Context) {
-            log("Sending ${this::class.simpleName}")
-            isLongPress = true
-            sendMediaButtonEventAndTriggerVibration(this)
-            runCatching {
-                RemotePrefsHelper.withRemotePrefs(context) {
-                    val count = getLaunchedCount()
-                    edit {
-                        putInt(LAUNCHED_COUNT, count + 1)
+        protected lateinit var controller: MediaController
+        protected lateinit var controls: MediaController.TransportControls
+
+        fun handle(param: MethodHookParam) {
+            updateState { isLongPress = true }
+            if (initController()) {
+                vibrator.triggerVibration()
+                if (getSecondaryEvent() != null) {
+                    updateState { pendingEvent = this@MediaEvent }
+                } else {
+                    doHandle(param)
+                }
+            }
+        }
+
+        fun doHandle(param: MethodHookParam) {
+            val context = param.getContext()
+            log("canHandle[${this::class.simpleName}]: ${canHandle()}")
+            if (canHandle()) {
+                log("Sending ${this::class.simpleName}")
+                doHandle()
+                runCatching {
+                    RemotePrefsHelper.withRemotePrefs(context) {
+                        val count = getLaunchedCount()
+                        edit {
+                            putInt(LAUNCHED_COUNT, count + 1)
+                        }
                     }
                 }
+                param.abortAll()
+            } else {
+                log("Not sending ${this::class.simpleName}, down: ${state.isDownPressed}, up: ${state.isUpPressed}")
             }
         }
 
-        object PlayPause : MediaEvent("mVolumeBothLongPress") {
-            override fun handle(context: Context) {
-                if (isUpPressed && isDownPressed) {
-                    super.handle(context)
-                } else {
-                    log("Not sending ${this::class.simpleName}, down: $isDownPressed, up: $isUpPressed")
+        open fun canHandle(): Boolean = true
+
+        abstract fun doHandle()
+
+        open fun getSecondaryEvent(): MediaEvent? = null
+
+        private fun initController(): Boolean {
+            return getMediaController()?.let {
+                controller = it
+                controls = it.transportControls
+                true
+            } ?: false
+        }
+
+        object PlayPause : MediaEvent() {
+            override fun canHandle() = state.isUpPressed && state.isDownPressed
+
+            override fun doHandle() {
+                if (controller.isMusicActive()) controls.pause() else controls.play()
+            }
+        }
+
+        abstract class BasePrimarySupportEvent : MediaEvent() {
+            abstract val isUpEvent: Boolean
+
+            open fun isPrimary(): Boolean = prefs.isAddSecondaryAction()
+
+            override fun canHandle(): Boolean {
+                val isPressed = if (isUpEvent) state.isUpPressed else state.isDownPressed
+                return (!isPressed).takeIf { isPrimary() } ?: super.canHandle()
+            }
+
+            override fun doHandle() {
+                if (!isPrimary()) {
+                    updateState { pendingEvent = null }
                 }
             }
         }
 
-        object Next : MediaEvent("mVolumeUpLongPress")
+        abstract class BaseSkipTrackEvent : BasePrimarySupportEvent() {
+            override fun isPrimary() =
+                super.isPrimary() && prefs.getRewindActionType() == RewindActionType.TRACK_CHANGE
+        }
 
-        object Prev : MediaEvent("mVolumeDownLongPress")
+        abstract class BaseRewindEvent : BasePrimarySupportEvent() {
+            override fun isPrimary() =
+                super.isPrimary() && prefs.getRewindActionType() == RewindActionType.REWIND
+        }
+
+        object Next : BaseSkipTrackEvent() {
+            override val isUpEvent = true
+
+            override fun getSecondaryEvent() = FastForward.takeIf { isPrimary() }
+
+            override fun doHandle() {
+                controls.skipToNext()
+                super.doHandle()
+            }
+        }
+
+        object Prev : BaseSkipTrackEvent() {
+            override val isUpEvent = false
+
+            override fun getSecondaryEvent() = Rewind.takeIf { isPrimary() }
+
+            override fun doHandle() {
+                controls.skipToPrevious()
+                super.doHandle()
+            }
+        }
+
+        object FastForward : BaseRewindEvent() {
+            override val isUpEvent = true
+
+            override fun getSecondaryEvent() = Next.takeIf { isPrimary() }
+
+            override fun doHandle() {
+                val currentPosition = controller.playbackState?.position ?: 0
+                val duration =
+                    controller.metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION)
+                        ?: Long.MAX_VALUE
+                val newPosition =
+                    min(currentPosition + prefs.getRewindDuration() * 1000, duration)
+                controls.seekTo(newPosition)
+                super.doHandle()
+            }
+        }
+
+        object Rewind : BaseRewindEvent() {
+            override val isUpEvent = false
+
+            override fun getSecondaryEvent() = Prev.takeIf { isPrimary() }
+
+            override fun doHandle() {
+                val currentPosition = controller.playbackState?.position ?: 0
+                val newPosition = max(currentPosition - prefs.getRewindDuration() * 1000, 0)
+                controls.seekTo(newPosition)
+                super.doHandle()
+            }
+        }
 
         companion object {
-            val entries = listOf(PlayPause, Next, Prev)
+            val entries = listOf(PlayPause, Next, Prev, FastForward, Rewind)
         }
     }
 
-
-    private class KeyHelper(keyCode: Int) {
-        private val origKey = Key.entries.find { it.keyCode == keyCode }!!
-        private val isSwap = prefs.isSwapButtons()
-        private val key = if (isSwap) {
+    private class KeyHelper private constructor(private val origKey: Key) {
+        private val key = if (prefs.isSwapButtons()) {
             when (origKey) {
                 Key.UP -> Key.DOWN
                 Key.DOWN -> Key.UP
@@ -360,17 +449,29 @@ object VolumeKeyControlModuleHandlers {
         } else {
             origKey
         }
-        val mediaEvent = key.mediaEvent
 
-        fun updateFlags(action: Action) {
-            val pressed = action == Action.PRESSED
-            when (key) {
-                Key.UP -> isUpPressed = pressed
-                Key.DOWN -> isDownPressed = pressed
+        fun getMatchingMediaEvent(): MediaEvent {
+            val isTrackChange = prefs.getRewindActionType() == RewindActionType.TRACK_CHANGE
+            val isUp = key == Key.UP
+            return when {
+                isTrackChange && isUp -> MediaEvent.Next
+                isTrackChange && !isUp -> MediaEvent.Prev
+                !isTrackChange && isUp -> MediaEvent.FastForward
+                else -> MediaEvent.Rewind
             }
         }
 
-        fun adjustStreamVolume(param: MethodHookParam) {
+        fun updateFlags(action: Action) {
+            val pressed = action == Action.PRESSED
+            updateState {
+                when (key) {
+                    Key.UP -> isUpPressed = pressed
+                    Key.DOWN -> isDownPressed = pressed
+                }
+            }
+        }
+
+        fun adjustStreamVolume(handler: Handler) {
             try {
                 val keyCode = when (origKey) {
                     Key.UP -> KeyEvent.KEYCODE_VOLUME_UP
@@ -387,13 +488,13 @@ object VolumeKeyControlModuleHandlers {
                             Boolean::class.javaPrimitiveType
                         ),
                         KeyEvent(action, keyCode),
-                        AudioManager.USE_DEFAULT_STREAM_TYPE,
+                        AudioManager.STREAM_MUSIC,
                         false
                     )
                 }
 
                 sendEvent(KeyEvent.ACTION_DOWN)
-                param.getHandler().postDelayed({
+                handler.postDelayed({
                     sendEvent(KeyEvent.ACTION_UP)
                 }, 20)
             } catch (e: Exception) {
@@ -408,16 +509,38 @@ object VolumeKeyControlModuleHandlers {
             }
         }
 
-        private companion object {
-            private enum class Key(val keyCode: Int, val mediaEvent: MediaEvent) {
-                UP(KeyEvent.KEYCODE_VOLUME_UP, MediaEvent.Next),
-                DOWN(KeyEvent.KEYCODE_VOLUME_DOWN, MediaEvent.Prev),
+        companion object {
+            private enum class Key(val keyCode: Int) {
+                UP(KeyEvent.KEYCODE_VOLUME_UP),
+                DOWN(KeyEvent.KEYCODE_VOLUME_DOWN),
             }
+
+            fun get(keyCode: Int) =
+                Key.entries.find { it.keyCode == keyCode }?.let { KeyHelper(it) }
         }
     }
 
     private enum class Action(val actionCode: Int) {
         PRESSED(KeyEvent.ACTION_DOWN),
         UNPRESSED(KeyEvent.ACTION_UP);
+    }
+
+    private fun updateState(fn: State.Builder.() -> Unit) {
+        val builder = State.Builder(state)
+        fn.invoke(builder)
+        state = builder.build()
+        log("SETTING NEW STATE: $state")
+    }
+
+    private fun updateFlags(event: KeyEvent) {
+        event.applyForAction { updateFlags(it) }
+    }
+
+    private fun KeyEvent.applyForAction(fn: KeyHelper.(Action) -> Unit) {
+        val action = Action.entries.find { it.actionCode == action }
+        val keyHelper = KeyHelper.get(keyCode)
+        if (keyHelper != null && action != null) {
+            fn.invoke(keyHelper, action)
+        }
     }
 }

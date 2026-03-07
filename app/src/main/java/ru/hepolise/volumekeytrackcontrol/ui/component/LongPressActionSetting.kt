@@ -10,10 +10,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.SegmentedButton
@@ -32,13 +35,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_ADD_SECONDARY_ACTION
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_ACTION_TYPE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_DURATION
 import ru.hepolise.volumekeytrackcontrolmodule.R
 
 data class RewindSettingData(
     val rewindActionType: RewindActionType,
-    val rewindDuration: Int
+    val rewindDuration: Int,
+    val isAddSecondaryAction: Boolean
 )
 
 @Composable
@@ -85,9 +90,32 @@ fun LongPressActionSetting(
         }
     }
 
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(
+            checked = data.isAddSecondaryAction,
+            onCheckedChange = {
+                onValueChange(data.copy(isAddSecondaryAction = it))
+                sharedPreferences.edit { putBoolean(IS_ADD_SECONDARY_ACTION, it) }
+            }
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = stringResource(R.string.add_secondary_action),
+            modifier = Modifier.clickable {
+                onValueChange(data.copy(isAddSecondaryAction = !data.isAddSecondaryAction))
+                sharedPreferences.edit {
+                    putBoolean(
+                        IS_ADD_SECONDARY_ACTION,
+                        !data.isAddSecondaryAction
+                    )
+                }
+            }
+        )
+    }
+
     Box {
         AnimatedVisibility(
-            visible = rewindActionType == RewindActionType.REWIND,
+            visible = rewindActionType == RewindActionType.REWIND || data.isAddSecondaryAction,
             enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
             exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
             modifier = Modifier.fillMaxWidth()
