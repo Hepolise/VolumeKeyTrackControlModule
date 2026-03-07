@@ -206,7 +206,7 @@ object VolumeKeyControlModuleHandlers {
                 val event = keyHelper.getMatchingMediaEvent()
                 delay(event)
                 event.getSecondaryEvent()?.also {
-                    delay(it, 2.3)
+                    delay(it, 2.4)
                 }
             }
             log("Creating delayed play pause")
