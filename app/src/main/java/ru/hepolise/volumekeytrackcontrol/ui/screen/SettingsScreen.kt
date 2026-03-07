@@ -106,6 +106,7 @@ import ru.hepolise.volumekeytrackcontrol.util.Constants
 import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.APP_FILTER_TYPE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.EFFECT_DEFAULT_VALUE
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_ADD_SECONDARY_ACTION_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_DURATION_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_ACTION_TYPE
@@ -123,6 +124,7 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getStatusSha
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isAddSecondaryAction
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isHooked
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.StatusSysPropsHelper
@@ -152,6 +154,7 @@ fun SettingsScreen(
     var longPressDuration by remember { mutableIntStateOf(settingsPrefs.getLongPressDuration()) }
     var rewindActionType by remember { mutableStateOf(settingsPrefs.getRewindActionType()) }
     var rewindDuration by remember { mutableIntStateOf(settingsPrefs.getRewindDuration()) }
+    var isAddSecondaryAction by remember { mutableStateOf(settingsPrefs.isAddSecondaryAction()) }
 
     var vibrationType by remember { mutableStateOf(settingsPrefs.getVibrationType()) }
     var vibrationLength by remember { mutableIntStateOf(settingsPrefs.getVibrationLength()) }
@@ -290,11 +293,13 @@ fun SettingsScreen(
                     LongPressActionSetting(
                         RewindSettingData(
                             rewindActionType,
-                            rewindDuration
+                            rewindDuration,
+                            isAddSecondaryAction
                         ), settingsPrefs
                     ) {
                         rewindActionType = it.rewindActionType
                         rewindDuration = it.rewindDuration
+                        isAddSecondaryAction = it.isAddSecondaryAction
                     }
                 }
 
@@ -345,6 +350,7 @@ fun SettingsScreen(
                                 rewindActionType = REWIND_ACTION_TYPE_DEFAULT_VALUE
                                 rewindDuration = REWIND_DURATION_DEFAULT_VALUE
                                 isSwapButtons = IS_SWAP_BUTTONS_DEFAULT_VALUE
+                                isAddSecondaryAction = IS_ADD_SECONDARY_ACTION_DEFAULT_VALUE
                                 appFilterType = AppFilterType.fromKey(
                                     APP_FILTER_TYPE_DEFAULT_VALUE
                                 )
