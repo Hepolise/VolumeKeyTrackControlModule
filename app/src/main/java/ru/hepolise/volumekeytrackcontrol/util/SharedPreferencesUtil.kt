@@ -22,6 +22,7 @@ object SharedPreferencesUtil {
     const val REWIND_ACTION_TYPE = "rewindActionType"
     const val REWIND_DURATION = "rewindDuration"
     const val IS_SWAP_BUTTONS = "isSwapButtons"
+    const val IS_ADD_SECONDARY_ACTION = "isAddSecondaryAction"
     const val APP_FILTER_TYPE = "appFilterType"
     const val WHITE_LIST_APPS = "whiteListApps"
     const val BLACK_LIST_APPS = "blackListApps"
@@ -38,6 +39,7 @@ object SharedPreferencesUtil {
     val REWIND_ACTION_TYPE_DEFAULT_VALUE = RewindActionType.TRACK_CHANGE
     const val REWIND_DURATION_DEFAULT_VALUE = 5
     const val IS_SWAP_BUTTONS_DEFAULT_VALUE = false
+    const val IS_ADD_SECONDARY_ACTION_DEFAULT_VALUE = false
     val APP_FILTER_TYPE_DEFAULT_VALUE = AppFilterType.DISABLED.key
 
     const val LAUNCHED_COUNT_DEFAULT_VALUE = 0
@@ -72,6 +74,11 @@ object SharedPreferencesUtil {
     fun SharedPreferences?.getRewindDuration(): Int {
         val defaultValue = REWIND_DURATION_DEFAULT_VALUE
         return this?.getInt(REWIND_DURATION, defaultValue) ?: defaultValue
+    }
+
+    fun SharedPreferences?.isAddSecondaryAction(): Boolean {
+        val defaultValue = IS_ADD_SECONDARY_ACTION_DEFAULT_VALUE
+        return this?.getBoolean(IS_ADD_SECONDARY_ACTION, defaultValue) ?: defaultValue
     }
 
     fun SharedPreferences?.isSwapButtons(): Boolean {
