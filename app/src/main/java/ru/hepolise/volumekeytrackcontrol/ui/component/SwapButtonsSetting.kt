@@ -13,8 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
+import ru.hepolise.volumekeytrackcontrol.R
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_SWAP_BUTTONS
-import ru.hepolise.volumekeytrackcontrolmodule.R
 
 @Composable
 fun SwapButtonsSetting(

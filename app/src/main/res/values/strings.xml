@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Volume Key Track Control</string>
+    <string name="module_description">Control music playback with long press volume keys: skip tracks, rewind, play/pause, with app filter and vibration settings.</string>
 
     <string name="module_info">Module Info</string>
     <string name="module_status">Status:</string>
@@ -82,4 +83,12 @@
     <string name="edit">Edit</string>
 
     <string name="value_in_range">Value in range %1$d..%2$d</string>
+
+    <string name="scope_not_selected_message">To use the module, you need to select \'system\' in Scope (LSPosed)</string>
+    <string name="scope_current">Current Scope:</string>
+    <string name="request_scope_button">Request Scope</string>
+    <string name="scope_request_failed">Scope request failed: %s</string>
+    <string name="scope_request_success">Scope requested: %s</string>
+    <string name="scope_request_error">Request error: %s</string>
+    <string name="requesting_scope">⏳ Requesting Scope…</string>
 </resources>

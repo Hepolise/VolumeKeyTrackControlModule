@@ -4,17 +4,27 @@ import android.graphics.drawable.Icon
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import androidx.core.content.edit
+import io.github.libxposed.service.XposedService
+import ru.hepolise.volumekeytrackcontrol.App
+import ru.hepolise.volumekeytrackcontrol.R
 import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_ACTION_TYPE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSettingsSharedPreferences
-import ru.hepolise.volumekeytrackcontrolmodule.R
 
-class RewindActionTileService : TileService() {
+class RewindActionTileService : TileService(), App.ServiceStateListener {
+
+    private var xposedService: XposedService? = null
 
     override fun onStartListening() {
         super.onStartListening()
+        App.addServiceStateListener(this, true)
         updateTile()
+    }
+
+    override fun onStopListening() {
+        App.removeServiceStateListener(this)
+        super.onStopListening()
     }
 
     override fun onClick() {
@@ -22,8 +32,12 @@ class RewindActionTileService : TileService() {
         toggleActionType()
     }
 
+    override fun onServiceStateChanged(service: XposedService?) {
+        xposedService = service
+    }
+
     private fun toggleActionType() {
-        val prefs = getSettingsSharedPreferences()
+        val prefs = xposedService?.getSettingsSharedPreferences()
         val currentType = prefs.getRewindActionType()
 
         val newType = when (currentType) {
@@ -39,7 +53,7 @@ class RewindActionTileService : TileService() {
     }
 
     private fun updateTile() {
-        val prefs = getSettingsSharedPreferences()
+        val prefs = xposedService?.getSettingsSharedPreferences()
         val currentType = prefs.getRewindActionType()
 
         val tile = qsTile ?: return

@@ -2,7 +2,6 @@ package ru.hepolise.volumekeytrackcontrol.ui.component
 
 import android.content.SharedPreferences
 import android.os.Build
-import android.os.Vibrator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -34,15 +33,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
+import ru.hepolise.volumekeytrackcontrol.R
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.EFFECT
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH
 import ru.hepolise.volumekeytrackcontrol.util.VibrationType
+import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.triggerVibration
-import ru.hepolise.volumekeytrackcontrolmodule.R
 
 data class VibrationSettingData(
     val vibrationType: VibrationType,
@@ -73,13 +74,15 @@ private val VibrationEffectTitles = VibrationType.values.associateWith {
 @Composable
 fun VibrationEffectSetting(
     value: VibrationSettingData,
-    vibrator: Vibrator?,
     sharedPreferences: SharedPreferences,
     onValueChange: (VibrationSettingData) -> Unit
 ) {
+    val context = LocalContext.current
+    val vibrator = context.getVibrator()
+
     val (vibrationType, vibrationLength, vibrationAmplitude) = value
 
-    val isVibrationAvailable = vibrator != null && vibrator.hasVibrator()
+    val isVibrationAvailable = vibrator.hasVibrator()
 
     if (!isVibrationAvailable) {
         Card(

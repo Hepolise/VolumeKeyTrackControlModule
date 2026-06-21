@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="module_description">通过长按音量键控制音乐播放：切换曲目、快退、播放/暂停，支持应用过滤和振动设置。</string>
     <string name="module_info">模块信息</string>
     <string name="module_status">状态：</string>
     <string name="module_status_active">已启用</string>
@@ -79,4 +80,12 @@
     <string name="edit">编辑</string>
 
     <string name="value_in_range">取值范围：%1$d～%2$d</string>
+
+    <string name="scope_not_selected_message">要使用模块，您需要在 LSPosed 的 Scope（作用域）中选择“system”</string>
+    <string name="scope_current">当前作用域：</string>
+    <string name="request_scope_button">请求作用域</string>
+    <string name="scope_request_failed">请求作用域失败：%s</string>
+    <string name="scope_request_success">已请求作用域：%s</string>
+    <string name="scope_request_error">请求错误：%s</string>
+    <string name="requesting_scope">⏳ 正在请求作用域…</string>
 </resources>

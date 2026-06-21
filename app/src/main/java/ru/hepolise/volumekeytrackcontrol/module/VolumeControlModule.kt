@@ -1,106 +1,175 @@
 package ru.hepolise.volumekeytrackcontrol.module
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Handler
+import android.util.Log
 import android.view.KeyEvent
-import androidx.annotation.Keep
-import de.robv.android.xposed.IXposedHookLoadPackage
-import de.robv.android.xposed.XposedHelpers
-import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
-import ru.hepolise.volumekeytrackcontrol.module.VolumeKeyControlModuleHandlers.handleConstructPhoneWindowManager
-import ru.hepolise.volumekeytrackcontrol.module.VolumeKeyControlModuleHandlers.handleInterceptKeyBeforeQueueing
-import ru.hepolise.volumekeytrackcontrol.module.util.LogHelper
-import java.io.Serializable
+import io.github.libxposed.api.XposedInterface
+import io.github.libxposed.api.XposedModule
+import io.github.libxposed.api.XposedModuleInterface
+import ru.hepolise.volumekeytrackcontrol.module.util.MediaSessionManager
+import ru.hepolise.volumekeytrackcontrol.module.util.StateManager
+import ru.hepolise.volumekeytrackcontrol.module.util.VolumeKeyHandler
+import ru.hepolise.volumekeytrackcontrol.module.util.getContext
+import ru.hepolise.volumekeytrackcontrol.module.util.getHandler
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS
 
-@Keep
-class VolumeControlModule : IXposedHookLoadPackage {
-
+class VolumeControlModule : XposedModule() {
     companion object {
+        const val TAG = "VolumeControl"
+
         private const val CLASS_PHONE_WINDOW_MANAGER =
             "com.android.server.policy.PhoneWindowManager"
-        private const val CLASS_IWINDOW_MANAGER = "android.view.IWindowManager"
-        private const val CLASS_WINDOW_MANAGER_FUNCS =
-            "com.android.server.policy.WindowManagerPolicy.WindowManagerFuncs"
+    }
 
-        private fun log(text: String) =
-            LogHelper.log(VolumeControlModule::class.java.simpleName, text)
+    private lateinit var stateManager: StateManager
+    private lateinit var prefs: android.content.SharedPreferences
 
-        private val initMethodSignatures = mapOf(
-            // Android 14, 15 and 16 signature
-            // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#2033
-            // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android15-release/services/core/java/com/android/server/policy/PhoneWindowManager.java#2199
-            // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/services/core/java/com/android/server/policy/PhoneWindowManager.java#2359
-            arrayOf(
-                Context::class.java,
-                CLASS_WINDOW_MANAGER_FUNCS
-            ) to "Using Android 14, 15 or 16 method signature",
+    private var interceptHookHandle: XposedInterface.HookHandle? = null
 
-            // Android 13 signature
-            // https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android13-dev/services/core/java/com/android/server/policy/PhoneWindowManager.java#1873
-            arrayOf(
-                Context::class.java,
-                CLASS_IWINDOW_MANAGER,
-                CLASS_WINDOW_MANAGER_FUNCS
-            ) to "Using Android 13 method signature",
+    private data class Runtime(
+        val context: Context,
+        val handler: Handler,
+        val mediaSessionManager: MediaSessionManager,
+        val volumeKeyHandler: VolumeKeyHandler
+    )
 
-            // HyperOS-specific signature
-            arrayOf(
-                Context::class.java,
-                CLASS_WINDOW_MANAGER_FUNCS,
-                CLASS_IWINDOW_MANAGER
-            ) to "Using HyperOS-specific method signature"
+    private var runtime: Runtime? = null
+
+    private fun log(msg: String) = log(Log.INFO, TAG, msg)
+
+    override fun onSystemServerStarting(param: XposedModuleInterface.SystemServerStartingParam) {
+        super.onSystemServerStarting(param)
+        log("onSystemServerStarting")
+        setupHooks(param.classLoader)
+    }
+
+    override fun onHotReloading(param: XposedModuleInterface.HotReloadingParam): Boolean {
+        log(Log.INFO, TAG, "onHotReloading")
+        return interceptHookHandle != null
+    }
+
+    override fun onHotReloaded(param: XposedModuleInterface.HotReloadedParam) {
+        log(
+            Log.INFO,
+            TAG,
+            "onHotReloaded: ${param.processName}, ${param.oldHookHandles.size} old hooks"
         )
-    }
 
-    @Throws(Throwable::class)
-    override fun handleLoadPackage(lpparam: LoadPackageParam) {
-        log("handleLoadPackage: ${lpparam.packageName}")
-        with(lpparam) {
-            when (packageName) {
-                "android" -> classLoader.init()
-            }
-        }
-    }
-
-    private fun ClassLoader.init() {
-        initMethodSignatures.any { (params, logMessage) ->
-            tryHookInitMethod(params, logMessage)
-        }.also { hooked ->
-            if (!hooked) {
-                log("Method hook failed for init!")
-                return
+        for (oldHandle in param.oldHookHandles) {
+            val executable = oldHandle.executable
+            if (executable.name == "interceptKeyBeforeQueueing") {
+                val newHooker = createInterceptHooker()
+                interceptHookHandle = oldHandle.replaceHook(newHooker)
+                log("Replaced interceptKeyBeforeQueueing hook")
+            } else {
+                oldHandle.unhook()
             }
         }
 
-        try {
-            // https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-14.0.0_r18/services/core/java/com/android/server/policy/PhoneWindowManager.java#4117
-            XposedHelpers.findAndHookMethod(
-                CLASS_PHONE_WINDOW_MANAGER,
-                this,
+        stateManager = StateManager()
+        prefs = getRemotePreferences(SETTINGS_PREFS)
+    }
+
+    private fun setupHooks(classLoader: ClassLoader) {
+        log("Setting up hooks")
+
+        stateManager = StateManager()
+        prefs = getRemotePreferences(SETTINGS_PREFS)
+
+        interceptHookHandle = hookInterceptKeyBeforeQueueing(classLoader)
+    }
+
+    @SuppressLint("PrivateApi")
+    private fun hookInterceptKeyBeforeQueueing(classLoader: ClassLoader): XposedInterface.HookHandle? {
+        return try {
+            val clazz = Class.forName(CLASS_PHONE_WINDOW_MANAGER, true, classLoader)
+            val method = clazz.getDeclaredMethod(
                 "interceptKeyBeforeQueueing",
                 KeyEvent::class.java,
-                Int::class.javaPrimitiveType,
-                handleInterceptKeyBeforeQueueing
+                Int::class.javaPrimitiveType
             )
-        } catch (t: Throwable) {
-            log("Method hook failed for interceptKeyBeforeQueueing!")
-            t.message?.let { log(it) }
-        }
 
+            val handle = hook(method).intercept(createInterceptHooker())
+            log("Hooked interceptKeyBeforeQueueing")
+            handle
+        } catch (t: Throwable) {
+            log("Failed to hook interceptKeyBeforeQueueing: ${t.message}")
+            log(t.stackTraceToString())
+            null
+        }
     }
 
-    private fun ClassLoader.tryHookInitMethod(
-        params: Array<Serializable>,
-        logMessage: String
-    ): Boolean {
-        return try {
-            XposedHelpers.findAndHookMethod(
-                CLASS_PHONE_WINDOW_MANAGER, this, "init",
-                *params, handleConstructPhoneWindowManager
-            )
-            log(logMessage)
-            true
-        } catch (_: NoSuchMethodError) {
-            false
+    private fun createInterceptHooker(): XposedInterface.Hooker {
+        return XposedInterface.Hooker { chain ->
+            val event = chain.args[0] as KeyEvent
+
+            val context = try {
+                chain.getContext()
+            } catch (e: Throwable) {
+                log("Failed to get context: ${e.message}")
+                log(e.stackTraceToString())
+                throw e
+            }
+
+            val runtime = chain.getRuntime(context)
+
+            try {
+                val volumeKeyHandler = runtime.volumeKeyHandler
+
+                volumeKeyHandler.refreshControllers()
+                if (volumeKeyHandler.shouldIntercept(event)) {
+                    log("Intercepting key event: ${event.keyCode}")
+                    volumeKeyHandler.handleKeyEvent(event)
+                    return@Hooker null
+                } else {
+                    volumeKeyHandler.logInterceptDecision(event)
+                }
+            } catch (e: Throwable) {
+                log("Error handling key event: ${e.message}")
+                log(e.stackTraceToString())
+            }
+
+            chain.proceed()
+        }
+    }
+
+    private fun XposedInterface.Chain.getRuntime(context: Context): Runtime {
+        runtime?.let { existing ->
+            if (existing.context === context) {
+                return existing
+            }
+
+            log("Context changed, recreating runtime")
+        }
+
+        val mediaSessionManager = MediaSessionManager(context)
+
+        val handler = try {
+            getHandler()
+        } catch (e: Throwable) {
+            log("Failed to get handler: ${e.message}")
+            log(e.stackTraceToString())
+            throw e
+        }
+
+        val volumeKeyHandler = VolumeKeyHandler(
+            context = context,
+            handler = handler,
+            stateManager = stateManager,
+            mediaSessionManager = mediaSessionManager,
+            prefs = prefs,
+            logger = ::log
+        )
+
+        return Runtime(
+            context = context,
+            handler = handler,
+            mediaSessionManager = mediaSessionManager,
+            volumeKeyHandler = volumeKeyHandler
+        ).also {
+            runtime = it
         }
     }
 }
