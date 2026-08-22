@@ -15,12 +15,11 @@ Works when the screen is off.
 
 ## Requirements
 
-* LSPosed 93+ (recommended version: [JingMatrix](https://github.com/JingMatrix/LSPosed))
-* Android 11+ (may be working on lower versions, you can try and install it even on Android 8.1)
+* Android 11+
 
 ## Tested on
 
-* OnePlus 10 Pro (Android 13 & 14)
+* OnePlus 13 (Android 16)
 
 [Open an issue](https://github.com/Hepolise/VolumeKeyTrackControlModule/issues/new) if you are
 experiencing some troubles on your device
