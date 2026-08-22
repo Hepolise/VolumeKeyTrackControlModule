@@ -1,15 +1,11 @@
 package ru.hepolise.volumekeytrackcontrol.util
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.content.Context.MODE_WORLD_READABLE
 import android.content.SharedPreferences
 import android.os.Build
-import android.os.SystemClock
 import android.view.ViewConfiguration
-import de.robv.android.xposed.XSharedPreferences
-import ru.hepolise.volumekeytrackcontrolmodule.BuildConfig
+import io.github.libxposed.service.XposedService
 
 object SharedPreferencesUtil {
     const val SETTINGS_PREFS = "settings_prefs"
@@ -27,9 +23,7 @@ object SharedPreferencesUtil {
     const val WHITE_LIST_APPS = "whiteListApps"
     const val BLACK_LIST_APPS = "blackListApps"
 
-    const val LAST_INIT_HOOK_TIME = "lastInitHookTime"
     const val LAUNCHED_COUNT = "launchedCount"
-    const val LAST_BOOT_COMPLETED_TIME = "lastBootCompletedTime"
 
     val EFFECT_DEFAULT_VALUE =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) VibrationType.Click.key else VibrationType.Manual.key
@@ -42,7 +36,7 @@ object SharedPreferencesUtil {
     const val IS_ADD_SECONDARY_ACTION_DEFAULT_VALUE = false
     val APP_FILTER_TYPE_DEFAULT_VALUE = AppFilterType.DISABLED.key
 
-    const val LAUNCHED_COUNT_DEFAULT_VALUE = 0
+    const val LAUNCHED_COUNT_DEFAULT_VALUE = -1
 
     fun SharedPreferences?.getVibrationType(): VibrationType {
         val defaultValue = EFFECT_DEFAULT_VALUE
@@ -102,35 +96,11 @@ object SharedPreferencesUtil {
         }
     }
 
-    fun SharedPreferences.isHooked(): Boolean {
-        val hookTime by lazy {
-            getLong(LAST_INIT_HOOK_TIME, 0L)
-        }
-        return StatusSysPropsHelper.isHooked
-                || hookTime >= (System.currentTimeMillis() - SystemClock.elapsedRealtime())
-    }
-
-    fun SharedPreferences.isBootCompleted() =
-        getLong(
-            LAST_BOOT_COMPLETED_TIME,
-            0L
-        ) >= (System.currentTimeMillis() - SystemClock.elapsedRealtime())
-
     fun SharedPreferences.getLaunchedCount(): Int =
         this.getInt(LAUNCHED_COUNT, LAUNCHED_COUNT_DEFAULT_VALUE)
 
-    private var _prefs: SharedPreferences? = null
-
-    fun prefs(): SharedPreferences? =
-        XSharedPreferences(BuildConfig.APPLICATION_ID, SETTINGS_PREFS)
-            .takeIf { it.file.canRead() }
-            ?.also { _prefs = it } ?: _prefs
-
-    fun Context.getSettingsSharedPreferences(): SharedPreferences? = runCatching {
-        @SuppressLint("WorldReadableFiles")
-        @Suppress("DEPRECATION")
-        return getSharedPreferences(SETTINGS_PREFS, MODE_WORLD_READABLE)
-    }.getOrNull()
+    fun XposedService.getSettingsSharedPreferences(): SharedPreferences =
+        getRemotePreferences(SETTINGS_PREFS)
 
     fun Context.getStatusSharedPreferences(): SharedPreferences =
         getSharedPreferences(STATUS_PREFS, MODE_PRIVATE)

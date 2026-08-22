@@ -1,10 +1,8 @@
 package ru.hepolise.volumekeytrackcontrol.ui.screen
 
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
-import android.os.Vibrator
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -32,7 +30,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Info
@@ -41,7 +38,6 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -53,20 +49,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,29 +73,24 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString.Builder
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import io.github.libxposed.service.HotReloadResult
+import ru.hepolise.volumekeytrackcontrol.R
+import ru.hepolise.volumekeytrackcontrol.ui.LocalHotReloadResult
+import ru.hepolise.volumekeytrackcontrol.ui.LocalXposedService
 import ru.hepolise.volumekeytrackcontrol.ui.component.AppFilterSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressActionSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressSetting
+import ru.hepolise.volumekeytrackcontrol.ui.component.ModuleInfoCard
 import ru.hepolise.volumekeytrackcontrol.ui.component.RewindSettingData
 import ru.hepolise.volumekeytrackcontrol.ui.component.SwapButtonsSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationEffectSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.VibrationSettingData
-import ru.hepolise.volumekeytrackcontrol.ui.isInstalledAfterReboot
 import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.Constants
 import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
@@ -112,7 +102,6 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.LONG_PRESS_D
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_ACTION_TYPE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_ACTION_TYPE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_DURATION_DEFAULT_VALUE
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_AMPLITUDE_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.VIBRATION_LENGTH_DEFAULT_VALUE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
@@ -120,36 +109,30 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLaunchedC
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindDuration
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSettingsSharedPreferences
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getStatusSharedPreferences
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationLength
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isAddSecondaryAction
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isHooked
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
-import ru.hepolise.volumekeytrackcontrol.util.StatusSysPropsHelper
 import ru.hepolise.volumekeytrackcontrol.util.VibrationType
-import ru.hepolise.volumekeytrackcontrol.viewmodel.BootViewModel
-import ru.hepolise.volumekeytrackcontrol.viewmodel.BootViewModelFactory
-import ru.hepolise.volumekeytrackcontrolmodule.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    isHooked: Boolean,
     navController: NavController?,
-    settingsPrefs: SharedPreferences?,
-    vibrator: Vibrator?
+    onRefresh: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val xposedService = LocalXposedService.current
+    val hotReloadResult = LocalHotReloadResult.current
+
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val statusPrefs = context.getStatusSharedPreferences()
-
-    val bootViewModel: BootViewModel = viewModel(
-        factory = BootViewModelFactory(context.applicationContext)
-    )
-
-    val isBootCompleted by bootViewModel.isBootCompleted.collectAsState()
-    val isLoading by bootViewModel.isLoading.collectAsState()
+    val settingsPrefs = xposedService?.getSettingsSharedPreferences()
 
     var longPressDuration by remember { mutableIntStateOf(settingsPrefs.getLongPressDuration()) }
     var rewindActionType by remember { mutableStateOf(settingsPrefs.getRewindActionType()) }
@@ -163,13 +146,9 @@ fun SettingsScreen(
     var appFilterType by remember { mutableStateOf(settingsPrefs.getAppFilterType()) }
     var showResetSettingsDialog by remember { mutableStateOf(false) }
 
-    val isHooked by produceState(initialValue = false) {
-        value = statusPrefs.isHooked().takeIf { settingsPrefs != null } ?: false
+    val isLoading =
+        hotReloadResult == null || hotReloadResult == HotReloadResult.Status.IN_PROGRESS
 
-        snapshotFlow { isLoading }.collect {
-            value = statusPrefs.isHooked().takeIf { settingsPrefs != null } ?: false
-        }
-    }
     var launchedCount by remember { mutableIntStateOf(statusPrefs.getLaunchedCount()) }
 
     DisposableEffect(Unit) {
@@ -199,6 +178,7 @@ fun SettingsScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             LargeTopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
@@ -235,36 +215,19 @@ fun SettingsScreen(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            SettingsCard(
-                icon = if (isHooked) Icons.Default.Done else Icons.Default.Warning,
-                title = stringResource(R.string.module_info),
-            ) {
-                when {
-                    context.isInstalledAfterReboot() -> {
-                        ModuleStatus(false)
-                        ModuleInitError()
-                    }
 
-                    isLoading && !isHooked && settingsPrefs != null -> {
-                        LoadingAnimation()
-                    }
-
-                    else -> {
-                        ModuleStatus(isHooked)
-
-                        when {
-                            isHooked && !StatusSysPropsHelper.isHooked -> LaunchCounter(
-                                launchedCount
-                            )
-
-                            settingsPrefs == null -> ModuleIsNotEnabled()
-                            isBootCompleted && !isHooked -> ModuleInitError()
-                        }
-                    }
-                }
+            if (isLoading) {
+                LoadingAnimation()
+            } else {
+                ModuleInfoCard(
+                    isHooked = isHooked,
+                    launchedCount = launchedCount,
+                    snackbarHostState = snackbarHostState,
+                    onScopeRequested = onRefresh
+                )
             }
 
-            if (settingsPrefs != null && isHooked && !context.isInstalledAfterReboot()) {
+            if (settingsPrefs != null && isHooked) {
                 SettingsCard(
                     icon = Icons.Default.Settings,
                     title = stringResource(R.string.long_press_settings)
@@ -313,7 +276,6 @@ fun SettingsScreen(
                             vibrationLength,
                             vibrationAmplitude
                         ),
-                        vibrator = vibrator,
                         sharedPreferences = settingsPrefs
                     ) {
                         vibrationType = it.vibrationType
@@ -483,23 +445,6 @@ fun ActionIconButton(
 }
 
 @Composable
-fun LaunchCounter(launchedCount: Int) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            stringResource(R.string.module_launch_count),
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Text(
-            text = launchedCount.toString(),
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
 fun LoadingAnimation() {
     Column(
         modifier = Modifier
@@ -516,95 +461,14 @@ fun LoadingAnimation() {
     }
 }
 
-@Composable
-fun ModuleStatus(isHooked: Boolean) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = stringResource(R.string.module_status),
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Text(
-            text = stringResource(
-                if (isHooked) R.string.module_status_active
-                else R.string.module_status_inactive
-            ),
-            color = if (isHooked) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.error,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-fun ModuleIsNotEnabled() {
-    Text(
-        text = buildAnnotatedString {
-            append(stringResource(id = R.string.module_is_not_enabled))
-            RecommendedLsposedVersion()
-        }
-    )
-}
-
-@Composable
-fun ModuleInitError() {
-    Text(
-        text = buildAnnotatedString {
-            append(stringResource(id = R.string.module_init_error))
-            append("\n")
-            append("\n")
-            withLink(
-                LinkAnnotation.Url(
-                    url = Constants.GITHUB_NEW_ISSUE_URL,
-                    styles = TextLinkStyles(
-                        style = SpanStyle(
-                            color = MaterialTheme.colorScheme.primary,
-                            textDecoration = TextDecoration.Underline
-                        )
-                    )
-                )
-            ) {
-                append(stringResource(id = R.string.open_an_issue))
-            }
-            append(" ")
-            append(stringResource(id = R.string.if_the_problem_persists))
-            RecommendedLsposedVersion()
-        }
-    )
-}
-
-@Composable
-private fun Builder.RecommendedLsposedVersion() {
-    append("\n")
-    append("\n")
-    append(stringResource(id = R.string.recommended_lsposed_version))
-    append(" ")
-    withLink(
-        LinkAnnotation.Url(
-            url = Constants.LSPOSED_GITHUB_URL,
-            styles = TextLinkStyles(
-                style = SpanStyle(
-                    color = MaterialTheme.colorScheme.primary,
-                    textDecoration = TextDecoration.Underline
-                )
-            )
-        )
-    ) {
-        append(stringResource(id = R.string.recommended_lsposed_version_url))
-    }
+sealed class ScopeRequestStatus {
+    object Loading : ScopeRequestStatus()
+    data class Success(val approved: List<String>) : ScopeRequestStatus()
+    data class Error(val message: String) : ScopeRequestStatus()
 }
 
 @Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun PreviewSettingsScreen() {
-    SettingsScreen(
-        navController = null,
-        settingsPrefs = LocalContext.current.getSharedPreferences(
-            SETTINGS_PREFS,
-            Context.MODE_PRIVATE
-        ),
-        vibrator = null
-    )
+    SettingsScreen(isHooked = false, navController = null)
 }

@@ -100,6 +100,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import ru.hepolise.volumekeytrackcontrol.R
 import ru.hepolise.volumekeytrackcontrol.ui.debounce
 import ru.hepolise.volumekeytrackcontrol.ui.model.AppInfo
 import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
@@ -109,7 +110,6 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.WHITE_LIST_A
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
 import ru.hepolise.volumekeytrackcontrol.viewmodel.AppFilterViewModel
 import ru.hepolise.volumekeytrackcontrol.viewmodel.AppIconViewModel
-import ru.hepolise.volumekeytrackcontrolmodule.R
 
 private const val MAX_APPS = 100
 

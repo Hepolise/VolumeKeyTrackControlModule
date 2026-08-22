@@ -1,6 +1,6 @@
 package ru.hepolise.volumekeytrackcontrol.util
 
-import ru.hepolise.volumekeytrackcontrolmodule.R
+import ru.hepolise.volumekeytrackcontrol.R
 
 enum class AppFilterType(
     val key: String,

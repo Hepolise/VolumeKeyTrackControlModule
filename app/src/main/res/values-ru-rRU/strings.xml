@@ -1,4 +1,5 @@
 <resources>
+    <string name="module_description">Управляйте воспроизведением музыки с помощью долгого нажатия кнопок громкости: пропускайте треки, перематывайте, ставьте на паузу/воспроизведение, настраивайте фильтр приложений и вибрацию.</string>
     <string name="module_info">Информация о модуле</string>
     <string name="module_status">Статус:</string>
     <string name="module_status_active">Активен</string>
@@ -84,4 +85,12 @@
     <string name="edit">Изменить</string>
 
     <string name="value_in_range">Значение в диапазоне %1$d..%2$d</string>
+
+    <string name="scope_not_selected_message">Для работы модуля необходимо выбрать system в разделе Scope (область действия) в LSPosed.</string>
+    <string name="scope_current">Текущая область действия (Scope):</string>
+    <string name="request_scope_button">Запросить область действия</string>
+    <string name="scope_request_failed">Ошибка запроса области действия: %s</string>
+    <string name="scope_request_success">Область действия запрошена: %s</string>
+    <string name="scope_request_error">Ошибка запроса: %s</string>
+    <string name="requesting_scope">⏳ Запрос области действия…</string>
 </resources>

@@ -25,7 +25,7 @@ object VibratorUtil {
         }
     }
 
-    fun Vibrator.triggerVibration(prefs: SharedPreferences? = SharedPreferencesUtil.prefs()) {
+    fun Vibrator.triggerVibration(prefs: SharedPreferences?) {
         val vibrationType = prefs.getVibrationType()
         if (vibrationType == VibrationType.Disabled) return
 

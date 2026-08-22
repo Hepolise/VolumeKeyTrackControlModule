@@ -1,42 +1,43 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
         applicationId = "ru.hepolise.volumekeymusicmanagermodule"
         minSdk = 27
-        targetSdk = 36
+        targetSdk = 37
         versionCode = rootProject.ext["appVersionCode"].toString().toInt()
         versionName = rootProject.ext["appVersionName"].toString()
     }
 
     buildTypes {
-        getByName("release") {
+        release {
             isMinifyEnabled = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            isShrinkResources = true
+            proguardFiles("proguard-rules.pro")
         }
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-
-    namespace = "ru.hepolise.volumekeytrackcontrolmodule"
+    namespace = "ru.hepolise.volumekeytrackcontrol"
     buildFeatures {
         buildConfig = true
+    }
+
+    packaging {
+        resources {
+            merges += "META-INF/xposed/*"
+            excludes += "**"
+        }
     }
 }
 
@@ -66,7 +67,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     // Xposed Framework API dependencies
-    compileOnly("de.robv.android.xposed:api:82")
+    compileOnly("io.github.libxposed:api:102.0.0")
+    implementation("io.github.libxposed:service:102.0.0")
 
     // RemotePreferences
     implementation("com.crossbowffs.remotepreferences:remotepreferences:0.8")

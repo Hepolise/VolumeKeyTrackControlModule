@@ -18,7 +18,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import ru.hepolise.volumekeytrackcontrolmodule.R
+import ru.hepolise.volumekeytrackcontrol.R
 
 @Composable
 fun NumberAlertDialog(

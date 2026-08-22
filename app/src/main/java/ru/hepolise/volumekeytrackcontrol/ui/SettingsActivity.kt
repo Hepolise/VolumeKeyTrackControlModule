@@ -11,7 +11,6 @@ import android.view.animation.AnticipateInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -20,26 +19,43 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import io.github.libxposed.service.HotReloadResult
+import io.github.libxposed.service.XposedService
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import ru.hepolise.volumekeytrackcontrol.App
+import ru.hepolise.volumekeytrackcontrol.ui.component.MODULE_SCOPE
 import ru.hepolise.volumekeytrackcontrol.ui.navigation.AppNavigation
-import ru.hepolise.volumekeytrackcontrol.util.LSPosedLogger
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSettingsSharedPreferences
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getStatusSharedPreferences
-import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isHooked
-import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
-import ru.hepolise.volumekeytrackcontrol.viewmodel.BootViewModel
-import ru.hepolise.volumekeytrackcontrol.viewmodel.BootViewModelFactory
 import kotlin.system.exitProcess
 
 
-class SettingsActivity : ComponentActivity() {
+class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
 
-    private val bootViewModel: BootViewModel by viewModels {
-        BootViewModelFactory(applicationContext)
+    private val _xposedService = MutableStateFlow<XposedService?>(null)
+    private val xposedService = _xposedService.asStateFlow()
+
+    private val _hotReloadResultStatus = MutableStateFlow<HotReloadResult.Status?>(null)
+    private val hotReloadResultStatus = _hotReloadResultStatus.asStateFlow()
+
+    private val _moduleScope = MutableStateFlow<List<String>?>(null)
+    private val moduleScope = _moduleScope.asStateFlow()
+
+    override fun onStart() {
+        super.onStart()
+        App.addServiceStateListener(this, true)
+    }
+
+    override fun onStop() {
+        App.removeServiceStateListener(this)
+        super.onStop()
     }
 
     @Volatile
@@ -53,19 +69,37 @@ class SettingsActivity : ComponentActivity() {
         keepSplashScreen = false
         setUpSplashScreenAnimation()
         enableEdgeToEdge()
+
         setContent {
-            val hookPrefs = getStatusSharedPreferences()
-            val prefs = getSettingsSharedPreferences()
+            val xposed by xposedService.collectAsState()
+            val result by hotReloadResultStatus.collectAsState()
+            val scope by moduleScope.collectAsState()
+            val prefs = xposed?.getSettingsSharedPreferences()
 
-            val isLoading by bootViewModel.isLoading.collectAsState()
+            fun computeIsHooked() = xposed != null
+                    && prefs != null
+                    && result != null && result != HotReloadResult.Status.FAILED
+                    && scope.orEmpty().contains(MODULE_SCOPE)
 
-            LaunchedEffect(hookPrefs, prefs, isLoading) {
-                LSPosedLogger.log("Updating shouldRemoveFromRecents")
-                shouldRemoveFromRecents = !hookPrefs.isHooked() || prefs == null
+            val isHooked = remember(result, xposed, prefs, scope) {
+                computeIsHooked()
             }
 
-            MaterialTheme(colorScheme = dynamicColorScheme(context = this)) {
-                AppNavigation(settingsPrefs = prefs, vibrator = getVibrator())
+            CompositionLocalProvider(
+                LocalXposedService provides xposed,
+                LocalHotReloadResult provides result,
+                LocalModuleScope provides scope
+            ) {
+                MaterialTheme(colorScheme = dynamicColorScheme(context = this)) {
+                    AppNavigation(isHooked) {
+                        xposed.updateModuleScope()
+                        xposed.updateHotReloadResult()
+                    }
+                }
+            }
+
+            LaunchedEffect(isHooked) {
+                shouldRemoveFromRecents = !isHooked
             }
         }
     }
@@ -75,6 +109,38 @@ class SettingsActivity : ComponentActivity() {
         if (shouldRemoveFromRecents) {
             exitProcess(0)
         }
+    }
+
+    override fun onServiceStateChanged(service: XposedService?) {
+        _xposedService.value = service
+        service.updateModuleScope()
+        service.updateHotReloadResult()
+    }
+
+    private fun XposedService?.updateHotReloadResult() {
+        fun fallback() {
+            _hotReloadResultStatus.value = HotReloadResult.Status.FAILED
+        }
+
+        val service = this ?: run {
+            fallback()
+            return
+        }
+
+        if (!service.scope.contains(MODULE_SCOPE)) {
+            fallback()
+            return
+        }
+
+        service.runningTargets.takeIf { it.isNotEmpty() }?.forEach { target ->
+            service.hotReloadModule(target, null) { _, result ->
+                _hotReloadResultStatus.value = result.status
+            }
+        } ?: fallback()
+    }
+
+    private fun XposedService?.updateModuleScope() {
+        _moduleScope.value = this?.scope
     }
 
     private fun setUpSplashScreenAnimation() {
