@@ -10,6 +10,8 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.PowerManager
+import android.os.UserHandle
+import android.util.Log
 import android.view.Display
 import android.view.KeyEvent
 import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
@@ -46,22 +48,63 @@ class MediaSessionManager(private val context: Context) {
             ?: throw NullPointerException("Unable to get MediaSessionLegacyHelper")
     }
 
-    @SuppressLint("BlockedPrivateApi")
     fun refreshControllers() {
-        val method = MediaSessionManager::class.java.getDeclaredMethod(
-            "getActiveSessionsForUser",
-            ComponentName::class.java,
-            Int::class.javaPrimitiveType
+        mediaControllers = getActiveControllers()
+    }
+    
+    @SuppressLint("BlockedPrivateApi")
+    private fun getActiveControllers(): List<MediaController>? {
+        try {
+            val legacy = MediaSessionManager::class.java.getDeclaredMethod(
+                "getActiveSessionsForUser",
+                ComponentName::class.java,
+                Int::class.javaPrimitiveType
+            )
+            legacy.isAccessible = true
+            val controllers = legacy.invoke(mediaSessionManager, null, USER_ID_ALL)
+            @Suppress("UNCHECKED_CAST")
+            return controllers as List<MediaController>
+        } catch (_: Exception) {
+        }
+
+        getUserHandleAll()?.let { userHandle ->
+            try {
+                val perUser = MediaSessionManager::class.java.getDeclaredMethod(
+                    "getActiveSessionsForUser",
+                    ComponentName::class.java,
+                    UserHandle::class.java
+                )
+                perUser.isAccessible = true
+                val controllers = perUser.invoke(mediaSessionManager, null, userHandle)
+                @Suppress("UNCHECKED_CAST")
+                return controllers as List<MediaController>
+            } catch (_: Exception) {
+            }
+        }
+
+        return try {
+            mediaSessionManager.getActiveSessions(null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get active media sessions", e)
+            null
+        }
+    }
+
+    @SuppressLint("BlockedPrivateApi")
+    private fun getUserHandleAll(): UserHandle? {
+        val clazz = UserHandle::class.java
+        val candidates: List<() -> Any?> = listOf(
+            { clazz.getField("ALL").get(null) },
+            { clazz.getConstructor(Int::class.javaPrimitiveType).newInstance(USER_ID_ALL) },
+            { clazz.getMethod("of", Int::class.javaPrimitiveType).invoke(null, USER_ID_ALL) }
         )
-
-        method.isAccessible = true
-
-        @Suppress("UNCHECKED_CAST")
-        mediaControllers = method.invoke(
-            mediaSessionManager,
-            null,     // ComponentName
-            -1              // android.os.UserHandle.ALL
-        ) as List<MediaController>
+        for (candidate in candidates) {
+            try {
+                (candidate() as? UserHandle)?.let { return it }
+            } catch (_: Exception) {
+            }
+        }
+        return null
     }
 
     fun getActiveMediaController(prefs: android.content.SharedPreferences): MediaController? {
@@ -122,5 +165,11 @@ class MediaSessionManager(private val context: Context) {
             }
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
         }
+    }
+
+    companion object {
+        private const val TAG = "VolumeControl"
+
+        private const val USER_ID_ALL = -1
     }
 }
