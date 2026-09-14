@@ -11,7 +11,6 @@ import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.PowerManager
 import android.os.UserHandle
-import android.util.Log
 import android.view.Display
 import android.view.KeyEvent
 import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
@@ -19,6 +18,10 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilter
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
 
 class MediaSessionManager(private val context: Context) {
+    companion object {
+        private const val USER_ALL = -1
+    }
+
     lateinit var audioManager: AudioManager
         private set
     private lateinit var powerManager: PowerManager
@@ -61,7 +64,7 @@ class MediaSessionManager(private val context: Context) {
                 Int::class.javaPrimitiveType
             )
             legacy.isAccessible = true
-            val controllers = legacy.invoke(mediaSessionManager, null, USER_ID_ALL)
+            val controllers = legacy.invoke(mediaSessionManager, null, USER_ALL)
             @Suppress("UNCHECKED_CAST")
             return controllers as List<MediaController>
         } catch (_: Exception) {
@@ -84,8 +87,7 @@ class MediaSessionManager(private val context: Context) {
 
         return try {
             mediaSessionManager.getActiveSessions(null)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get active media sessions", e)
+        } catch (_: Exception) {
             null
         }
     }
@@ -95,8 +97,8 @@ class MediaSessionManager(private val context: Context) {
         val clazz = UserHandle::class.java
         val candidates: List<() -> Any?> = listOf(
             { clazz.getField("ALL").get(null) },
-            { clazz.getConstructor(Int::class.javaPrimitiveType).newInstance(USER_ID_ALL) },
-            { clazz.getMethod("of", Int::class.javaPrimitiveType).invoke(null, USER_ID_ALL) }
+            { clazz.getConstructor(Int::class.javaPrimitiveType).newInstance(USER_ALL) },
+            { clazz.getMethod("of", Int::class.javaPrimitiveType).invoke(null, USER_ALL) }
         )
         for (candidate in candidates) {
             try {
@@ -165,11 +167,5 @@ class MediaSessionManager(private val context: Context) {
             }
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
         }
-    }
-
-    companion object {
-        private const val TAG = "VolumeControl"
-
-        private const val USER_ID_ALL = -1
     }
 }
