@@ -11,6 +11,7 @@ import io.github.libxposed.api.XposedModuleInterface
 import ru.hepolise.volumekeytrackcontrol.module.util.MediaSessionManager
 import ru.hepolise.volumekeytrackcontrol.module.util.StateManager
 import ru.hepolise.volumekeytrackcontrol.module.util.VolumeKeyHandler
+import ru.hepolise.volumekeytrackcontrol.module.util.getDeclaredMethodInHierarchy
 import ru.hepolise.volumekeytrackcontrol.module.util.getContext
 import ru.hepolise.volumekeytrackcontrol.module.util.getHandler
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SETTINGS_PREFS
@@ -84,11 +85,11 @@ class VolumeControlModule : XposedModule() {
     @SuppressLint("PrivateApi")
     private fun hookInterceptKeyBeforeQueueing(classLoader: ClassLoader): XposedInterface.HookHandle? {
         return try {
-            val clazz = Class.forName(CLASS_PHONE_WINDOW_MANAGER, true, classLoader)
-            val method = clazz.getDeclaredMethod(
-                "interceptKeyBeforeQueueing",
-                KeyEvent::class.java,
-                Int::class.javaPrimitiveType
+            val clazz = CLASS_PHONE_WINDOW_MANAGER.toClass(classLoader)
+            val method = clazz.getDeclaredMethodInHierarchy(
+              "interceptKeyBeforeQueueing",
+              KeyEvent::class.java,
+              Int::class.javaPrimitiveType!!
             )
 
             val handle = hook(method).intercept(createInterceptHooker())
