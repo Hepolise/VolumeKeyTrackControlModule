@@ -87,9 +87,9 @@ class VolumeControlModule : XposedModule() {
         return try {
             val clazz = Class.forName(CLASS_PHONE_WINDOW_MANAGER, true, classLoader)
             val method = clazz.getDeclaredMethodInHierarchy(
-              "interceptKeyBeforeQueueing",
-              KeyEvent::class.java,
-              Int::class.javaPrimitiveType!!
+                "interceptKeyBeforeQueueing",
+                KeyEvent::class.java,
+                Int::class.javaPrimitiveType
             )
 
             val handle = hook(method).intercept(createInterceptHooker())
