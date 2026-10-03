@@ -85,7 +85,7 @@ class VolumeControlModule : XposedModule() {
     @SuppressLint("PrivateApi")
     private fun hookInterceptKeyBeforeQueueing(classLoader: ClassLoader): XposedInterface.HookHandle? {
         return try {
-            val clazz = CLASS_PHONE_WINDOW_MANAGER.toClass(classLoader)
+            val clazz = Class.forName(CLASS_PHONE_WINDOW_MANAGER, true, classLoader)
             val method = clazz.getDeclaredMethodInHierarchy(
               "interceptKeyBeforeQueueing",
               KeyEvent::class.java,
