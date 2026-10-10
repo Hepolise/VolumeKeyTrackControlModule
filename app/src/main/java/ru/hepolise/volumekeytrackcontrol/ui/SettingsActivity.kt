@@ -5,6 +5,7 @@ import android.animation.ObjectAnimator
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.AnticipateInterpolator
@@ -38,6 +39,10 @@ import kotlin.system.exitProcess
 
 
 class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
+
+    companion object {
+        private const val TAG = "SettingsActivity"
+    }
 
     private val _xposedService = MutableStateFlow<XposedService?>(null)
     private val xposedService = _xposedService.asStateFlow()
@@ -76,12 +81,21 @@ class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
             val scope by moduleScope.collectAsState()
             val prefs = xposed?.getSettingsSharedPreferences()
 
-            fun computeIsHooked() = xposed != null
-                    && prefs != null
-                    && result != null && result != HotReloadResult.Status.FAILED
-                    && scope.orEmpty().contains(MODULE_SCOPE)
+            fun computeIsHooked(): Boolean {
+                val hooked = xposed != null
+                        && prefs != null
+                        && result != null && result != HotReloadResult.Status.FAILED
+                        && scope.orEmpty().contains(MODULE_SCOPE)
+                Log.d(
+                    TAG,
+                    "computeIsHooked: xposed=${xposed != null}, prefs=${prefs != null}, " +
+                            "result=$result, scope=${scope.orEmpty()}, MODULE_SCOPE=$MODULE_SCOPE -> isHooked=$hooked"
+                )
+                return hooked
+            }
 
             val isHooked = remember(result, xposed, prefs, scope) {
+                Log.d(TAG, "remember recompute: result=$result, xposed=${xposed != null}, prefs=${prefs != null}, scope=$scope")
                 computeIsHooked()
             }
 
@@ -92,6 +106,7 @@ class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
             ) {
                 MaterialTheme(colorScheme = dynamicColorScheme(context = this)) {
                     AppNavigation(isHooked) {
+                        Log.d(TAG, "retry callback: updateModuleScope + updateHotReloadResult")
                         xposed.updateModuleScope()
                         xposed.updateHotReloadResult()
                     }
@@ -99,6 +114,7 @@ class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
             }
 
             LaunchedEffect(isHooked) {
+                Log.d(TAG, "LaunchedEffect(isHooked=$isHooked): shouldRemoveFromRecents=${!isHooked}")
                 shouldRemoveFromRecents = !isHooked
             }
         }
@@ -112,34 +128,41 @@ class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
     }
 
     override fun onServiceStateChanged(service: XposedService?) {
+        Log.d(TAG, "onServiceStateChanged: service=$service")
         _xposedService.value = service
         service.updateModuleScope()
         service.updateHotReloadResult()
     }
 
     private fun XposedService?.updateHotReloadResult() {
-        fun fallback() {
+        Log.d(TAG, "updateHotReloadResult: service=$this, scope=${this?.scope}, runningTargets=${this?.runningTargets}")
+
+        fun fallback(reason: String) {
+            Log.d(TAG, "updateHotReloadResult fallback -> FAILED: $reason")
             _hotReloadResultStatus.value = HotReloadResult.Status.FAILED
         }
 
         val service = this ?: run {
-            fallback()
+            fallback("service is null")
             return
         }
 
         if (!service.scope.contains(MODULE_SCOPE)) {
-            fallback()
+            fallback("scope does not contain MODULE_SCOPE; scope=${service.scope}")
             return
         }
 
         service.runningTargets.takeIf { it.isNotEmpty() }?.forEach { target ->
+            Log.d(TAG, "hotReloadModule: target=$target")
             service.hotReloadModule(target, null) { _, result ->
+                Log.d(TAG, "hotReloadModule callback: target=$target, status=${result.status}")
                 _hotReloadResultStatus.value = result.status
             }
-        } ?: fallback()
+        } ?: fallback("runningTargets is empty")
     }
 
     private fun XposedService?.updateModuleScope() {
+        Log.d(TAG, "updateModuleScope: scope=${this?.scope}")
         _moduleScope.value = this?.scope
     }
 
