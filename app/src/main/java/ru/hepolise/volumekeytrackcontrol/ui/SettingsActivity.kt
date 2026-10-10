@@ -41,7 +41,7 @@ import kotlin.system.exitProcess
 class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
 
     companion object {
-        private const val TAG = "SettingsActivity"
+        private const val TAG = "LSPosedFramework"
     }
 
     private val _xposedService = MutableStateFlow<XposedService?>(null)
