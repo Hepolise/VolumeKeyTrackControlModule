@@ -42,7 +42,7 @@ android {
 }
 
 dependencies {
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.4.20"))
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.4.21"))
     implementation("androidx.core:core-ktx:1.19.1")
 
     // Compose BOM (Bill of Materials)
