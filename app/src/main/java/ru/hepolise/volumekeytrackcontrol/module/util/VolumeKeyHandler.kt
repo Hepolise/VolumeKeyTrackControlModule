@@ -34,6 +34,7 @@ class VolumeKeyHandler(
         title: String,
         keyCode: Int,
         displayInteractive: Boolean,
+        displayState: String,
         audioMode: Int,
         isDownPressed: Boolean,
         isUpPressed: Boolean,
@@ -43,7 +44,7 @@ class VolumeKeyHandler(
         logger("======== $title ========")
         logger("audioManager mode: $audioMode, required: ${AudioManager.MODE_NORMAL}")
         logger("keyCode: $keyCode, required: ${KeyEvent.KEYCODE_VOLUME_DOWN} or ${KeyEvent.KEYCODE_VOLUME_UP}")
-        logger("displayInteractive: $displayInteractive, required: false")
+        logger("displayInteractive: $displayInteractive, required: false ($displayState)")
         logger("isDownPressed: $isDownPressed")
         logger("isUpPressed: $isUpPressed")
         logger("hasPendingEvent: $hasPendingEvent")
@@ -52,11 +53,11 @@ class VolumeKeyHandler(
         logger("=========================================")
     }
 
-    fun logInterceptDecision(event: KeyEvent) {
+    fun logInterceptDecision(event: KeyEvent, policyFlags: Int) {
         val keyCode = event.keyCode
         if (keyCode != KeyEvent.KEYCODE_VOLUME_DOWN && keyCode != KeyEvent.KEYCODE_VOLUME_UP) return
 
-        val displayInteractive = mediaSessionManager.isDisplayInteractive()
+        val displayInteractive = mediaSessionManager.isDisplayInteractive(policyFlags)
         val audioMode = mediaSessionManager.audioManager.mode
         val isDownPressed = stateManager.isDownPressed
         val isUpPressed = stateManager.isUpPressed
@@ -67,6 +68,7 @@ class VolumeKeyHandler(
             title = "LOG INTERCEPT DECISION",
             keyCode = keyCode,
             displayInteractive = displayInteractive,
+            displayState = mediaSessionManager.describeDisplayState(policyFlags),
             audioMode = audioMode,
             isDownPressed = isDownPressed,
             isUpPressed = isUpPressed,
@@ -75,12 +77,12 @@ class VolumeKeyHandler(
         )
     }
 
-    fun shouldIntercept(event: KeyEvent): Boolean {
+    fun shouldIntercept(event: KeyEvent, policyFlags: Int): Boolean {
         val keyCode = event.keyCode
         if (keyCode != KeyEvent.KEYCODE_VOLUME_DOWN && keyCode != KeyEvent.KEYCODE_VOLUME_UP) return false
         if (event.flags and KeyEvent.FLAG_FROM_SYSTEM == 0) return false
 
-        val displayInteractive = mediaSessionManager.isDisplayInteractive()
+        val displayInteractive = mediaSessionManager.isDisplayInteractive(policyFlags)
         if (displayInteractive) return false
 
         val audioMode = mediaSessionManager.audioManager.mode
@@ -96,6 +98,7 @@ class VolumeKeyHandler(
             title = "NEED HOOK CHECK",
             keyCode = keyCode,
             displayInteractive = false,
+            displayState = mediaSessionManager.describeDisplayState(policyFlags),
             audioMode = audioMode,
             isDownPressed = isDownPressed,
             isUpPressed = isUpPressed,
