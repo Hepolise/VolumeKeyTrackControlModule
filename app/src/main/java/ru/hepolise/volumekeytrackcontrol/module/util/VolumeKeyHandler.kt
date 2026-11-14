@@ -166,7 +166,7 @@ class VolumeKeyHandler(
         logger("isMusicActive: $isMusicActive")
         if (!stateManager.isLongPress && isMusicActive) {
             logger("Adjusting stream volume")
-            mediaSessionManager.adjustStreamVolume(event.keyCode, handler)
+            mediaSessionManager.adjustStreamVolume(event.keyCode, handler, logger)
         }
     }
 
@@ -202,11 +202,9 @@ class VolumeKeyHandler(
     ) {
         val delay = (prefs.getLongPressDuration() + multiplier * prefs.getLongPressDuration()
             .toDouble()).toLong()
-        val runnable = Runnable {
+        pendingRunnables[event] = handler.postSafely(delay, logger) {
             onDelayedEvent(event, isPrimary, hasSecondary)
         }
-        pendingRunnables[event] = runnable
-        handler.postDelayed(runnable, delay)
         logger("Scheduled event ${event::class.simpleName} (isPrimary=$isPrimary, hasSecondary=$hasSecondary) with delay $delay ms")
     }
 

@@ -40,7 +40,8 @@ object SharedPreferencesUtil {
 
     fun SharedPreferences?.getVibrationType(): VibrationType {
         val defaultValue = EFFECT_DEFAULT_VALUE
-        return VibrationType.fromKey(this?.getString(EFFECT, defaultValue) ?: defaultValue)
+        val key = this?.getString(EFFECT, defaultValue) ?: defaultValue
+        return VibrationType.values.find { it.key == key } ?: VibrationType.fromKey(defaultValue)
     }
 
     fun SharedPreferences?.getVibrationLength(): Int {
@@ -59,10 +60,8 @@ object SharedPreferencesUtil {
     }
 
     fun SharedPreferences?.getRewindActionType(): RewindActionType {
-        val defaultValue = REWIND_ACTION_TYPE_DEFAULT_VALUE.name
-        return RewindActionType.valueOf(
-            this?.getString(REWIND_ACTION_TYPE, defaultValue) ?: defaultValue
-        )
+        val name = this?.getString(REWIND_ACTION_TYPE, null)
+        return RewindActionType.entries.find { it.name == name } ?: REWIND_ACTION_TYPE_DEFAULT_VALUE
     }
 
     fun SharedPreferences?.getRewindDuration(): Int {

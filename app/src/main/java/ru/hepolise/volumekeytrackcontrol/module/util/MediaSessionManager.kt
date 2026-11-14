@@ -146,7 +146,7 @@ class MediaSessionManager(private val context: Context) {
         )
     }
 
-    fun adjustStreamVolume(keyCode: Int, handler: Handler) {
+    fun adjustStreamVolume(keyCode: Int, handler: Handler, logger: (String) -> Unit) {
         try {
             val downEvent = KeyEvent(KeyEvent.ACTION_DOWN, keyCode)
             val method = sessionHelper.javaClass.getMethod(
@@ -156,10 +156,10 @@ class MediaSessionManager(private val context: Context) {
                 Boolean::class.javaPrimitiveType
             )
             method.invoke(sessionHelper, downEvent, AudioManager.STREAM_MUSIC, false)
-            handler.postDelayed({
+            handler.postSafely(20, logger) {
                 val upEvent = KeyEvent(KeyEvent.ACTION_UP, keyCode)
                 method.invoke(sessionHelper, upEvent, AudioManager.STREAM_MUSIC, false)
-            }, 20)
+            }
         } catch (e: Exception) {
             val direction = when (keyCode) {
                 KeyEvent.KEYCODE_VOLUME_UP -> AudioManager.ADJUST_RAISE
