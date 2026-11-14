@@ -11,6 +11,7 @@ import ru.hepolise.volumekeytrackcontrol.module.MediaEvent
 import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindActionType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSecondaryActionDelay
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isAddSecondaryAction
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
@@ -151,7 +152,12 @@ class VolumeKeyHandler(
             scheduleEvent(primary, isPrimary = hasSecondary, hasSecondary = hasSecondary)
             getSecondaryEvent(primary)?.let { secondary ->
                 logger("Scheduling secondary event: ${secondary::class.simpleName} with delay")
-                scheduleEvent(secondary, isPrimary = false, hasSecondary = false, multiplier = 1.4)
+                scheduleEvent(
+                    secondary,
+                    isPrimary = false,
+                    hasSecondary = false,
+                    delay = (prefs.getLongPressDuration() + prefs.getSecondaryActionDelay()).toLong()
+                )
             }
         }
         logger("Creating delayed play pause")
@@ -198,10 +204,8 @@ class VolumeKeyHandler(
         event: MediaEvent,
         isPrimary: Boolean,
         hasSecondary: Boolean,
-        multiplier: Double = 0.0
+        delay: Long = prefs.getLongPressDuration().toLong()
     ) {
-        val delay = (prefs.getLongPressDuration() + multiplier * prefs.getLongPressDuration()
-            .toDouble()).toLong()
         pendingRunnables[event] = handler.postSafely(delay, logger) {
             onDelayedEvent(event, isPrimary, hasSecondary)
         }

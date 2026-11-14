@@ -57,6 +57,9 @@
     <string name="rewind_duration_dialog_title">设置快退时长</string>
     <string name="edit_rewind_duration">编辑快退时长</string>
     <string name="add_secondary_action">添加次要操作</string>
+    <string name="secondary_action_delay">次要操作延迟：%d毫秒</string>
+    <string name="secondary_action_delay_dialog_title">次要操作延迟</string>
+    <string name="edit_secondary_action_delay">编辑次要操作延迟</string>
 
     <string name="settings_reset">重置设置</string>
     <string name="settings_reset_message">确定要重置设置吗？</string>

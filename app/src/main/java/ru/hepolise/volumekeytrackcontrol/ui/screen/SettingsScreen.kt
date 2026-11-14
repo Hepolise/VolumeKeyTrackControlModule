@@ -109,6 +109,7 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLaunchedC
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindDuration
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSecondaryActionDelay
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSettingsSharedPreferences
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getStatusSharedPreferences
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationAmplitude
@@ -116,6 +117,7 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getVibrationType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isAddSecondaryAction
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.secondaryActionDelayDefault
 import ru.hepolise.volumekeytrackcontrol.util.VibrationType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -138,6 +140,7 @@ fun SettingsScreen(
     var rewindActionType by remember { mutableStateOf(settingsPrefs.getRewindActionType()) }
     var rewindDuration by remember { mutableIntStateOf(settingsPrefs.getRewindDuration()) }
     var isAddSecondaryAction by remember { mutableStateOf(settingsPrefs.isAddSecondaryAction()) }
+    var secondaryActionDelay by remember { mutableIntStateOf(settingsPrefs.getSecondaryActionDelay()) }
 
     var vibrationType by remember { mutableStateOf(settingsPrefs.getVibrationType()) }
     var vibrationLength by remember { mutableIntStateOf(settingsPrefs.getVibrationLength()) }
@@ -257,12 +260,14 @@ fun SettingsScreen(
                         RewindSettingData(
                             rewindActionType,
                             rewindDuration,
-                            isAddSecondaryAction
+                            isAddSecondaryAction,
+                            secondaryActionDelay
                         ), settingsPrefs
                     ) {
                         rewindActionType = it.rewindActionType
                         rewindDuration = it.rewindDuration
                         isAddSecondaryAction = it.isAddSecondaryAction
+                        secondaryActionDelay = it.secondaryActionDelay
                     }
                 }
 
@@ -313,6 +318,8 @@ fun SettingsScreen(
                                 rewindDuration = REWIND_DURATION_DEFAULT_VALUE
                                 isSwapButtons = IS_SWAP_BUTTONS_DEFAULT_VALUE
                                 isAddSecondaryAction = IS_ADD_SECONDARY_ACTION_DEFAULT_VALUE
+                                secondaryActionDelay =
+                                    secondaryActionDelayDefault(LONG_PRESS_DURATION_DEFAULT_VALUE)
                                 appFilterType = AppFilterType.fromKey(
                                     APP_FILTER_TYPE_DEFAULT_VALUE
                                 )
