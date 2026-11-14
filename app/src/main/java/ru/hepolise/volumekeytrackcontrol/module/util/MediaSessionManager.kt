@@ -12,6 +12,7 @@ import android.os.Handler
 import android.os.UserHandle
 import android.view.Display
 import android.view.KeyEvent
+import java.lang.reflect.Method
 import ru.hepolise.volumekeytrackcontrol.util.AppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getAppFilterType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
@@ -59,33 +60,34 @@ class MediaSessionManager(private val context: Context) {
         mediaControllers = getActiveControllers()
     }
     
+    private val sessionsForUserId by lazy { findActiveSessionsForUser(Int::class.javaPrimitiveType!!) }
+    private val sessionsForUserHandle by lazy { findActiveSessionsForUser(UserHandle::class.java) }
+
     @SuppressLint("BlockedPrivateApi")
+    private fun findActiveSessionsForUser(userParamType: Class<*>): Method? = runCatching {
+        MediaSessionManager::class.java.getDeclaredMethod(
+            "getActiveSessionsForUser",
+            ComponentName::class.java,
+            userParamType
+        ).apply { isAccessible = true }
+    }.getOrNull()
+
+    private val userHandleAll: UserHandle? by lazy { findUserHandleAll() }
+
+    @Suppress("UNCHECKED_CAST")
     private fun getActiveControllers(): List<MediaController>? {
-        try {
-            val legacy = MediaSessionManager::class.java.getDeclaredMethod(
-                "getActiveSessionsForUser",
-                ComponentName::class.java,
-                Int::class.javaPrimitiveType
-            )
-            legacy.isAccessible = true
-            val controllers = legacy.invoke(mediaSessionManager, null, USER_ALL)
-            @Suppress("UNCHECKED_CAST")
-            return controllers as List<MediaController>
-        } catch (_: Exception) {
+        sessionsForUserId?.let { method ->
+            runCatching {
+                return method.invoke(mediaSessionManager, null, USER_ALL) as List<MediaController>
+            }
         }
 
-        getUserHandleAll()?.let { userHandle ->
-            try {
-                val perUser = MediaSessionManager::class.java.getDeclaredMethod(
-                    "getActiveSessionsForUser",
-                    ComponentName::class.java,
-                    UserHandle::class.java
-                )
-                perUser.isAccessible = true
-                val controllers = perUser.invoke(mediaSessionManager, null, userHandle)
-                @Suppress("UNCHECKED_CAST")
-                return controllers as List<MediaController>
-            } catch (_: Exception) {
+        val userHandle = userHandleAll
+        if (userHandle != null) {
+            sessionsForUserHandle?.let { method ->
+                runCatching {
+                    return method.invoke(mediaSessionManager, null, userHandle) as List<MediaController>
+                }
             }
         }
 
@@ -97,7 +99,7 @@ class MediaSessionManager(private val context: Context) {
     }
 
     @SuppressLint("BlockedPrivateApi")
-    private fun getUserHandleAll(): UserHandle? {
+    private fun findUserHandleAll(): UserHandle? {
         val clazz = UserHandle::class.java
         val candidates: List<() -> Any?> = listOf(
             { clazz.getField("ALL").get(null) },
