@@ -3,6 +3,8 @@ package ru.hepolise.volumekeytrackcontrol.module
 import android.content.SharedPreferences
 import android.media.MediaMetadata
 import android.media.session.MediaController
+import android.media.session.PlaybackState
+import android.os.SystemClock
 import ru.hepolise.volumekeytrackcontrol.module.util.StateManager
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindDuration
 import kotlin.math.max
@@ -83,8 +85,11 @@ sealed class MediaEvent {
                 return false
             }
             context.logger("Sending FastForward")
-            val current = context.controller.playbackState?.position ?: 0L
-            val duration = context.controller.metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION)
+            val current = context.controller.currentPosition()
+            // getLong() returns 0 when the key is missing (streams, some podcasts)
+            val duration = context.controller.metadata
+                ?.getLong(MediaMetadata.METADATA_KEY_DURATION)
+                ?.takeIf { it > 0 }
                 ?: Long.MAX_VALUE
             val newPos = min(current + context.prefs.getRewindDuration() * 1000L, duration)
             context.controls.seekTo(newPos)
@@ -101,7 +106,7 @@ sealed class MediaEvent {
                 return false
             }
             context.logger("Sending Rewind")
-            val current = context.controller.playbackState?.position ?: 0L
+            val current = context.controller.currentPosition()
             val newPos = max(current - context.prefs.getRewindDuration() * 1000L, 0L)
             context.controls.seekTo(newPos)
             return true
@@ -127,4 +132,14 @@ fun MediaController.isMusicActive(): Boolean {
 
         else -> false
     }
+}
+
+private fun MediaController.currentPosition(): Long {
+    val state = playbackState ?: return 0L
+    val position = state.position.coerceAtLeast(0L)
+    if (state.state != PlaybackState.STATE_PLAYING || state.lastPositionUpdateTime <= 0L) {
+        return position
+    }
+    val elapsed = SystemClock.elapsedRealtime() - state.lastPositionUpdateTime
+    return position + (elapsed * state.playbackSpeed).toLong()
 }

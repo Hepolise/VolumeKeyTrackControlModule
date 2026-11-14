@@ -259,7 +259,7 @@ class VolumeKeyHandler(
 
     private fun abortSkip() {
         logger("Aborting skip")
-        abortEvents(MediaEvent.Prev, MediaEvent.Next)
+        abortEvents(*pendingRunnables.keys.filter { it != MediaEvent.PlayPause }.toTypedArray())
     }
 
     private fun abortAll() {
