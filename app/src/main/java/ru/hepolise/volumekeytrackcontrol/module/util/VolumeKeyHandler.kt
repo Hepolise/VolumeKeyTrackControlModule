@@ -210,7 +210,6 @@ class VolumeKeyHandler(
 
     private fun onDelayedEvent(event: MediaEvent, isPrimary: Boolean, hasSecondary: Boolean) {
         logger("Delayed event triggered: ${event::class.simpleName}")
-        context.getVibrator().triggerVibration(prefs)
         stateManager.update { isLongPress = true }
 
         if (hasSecondary) {
@@ -219,18 +218,21 @@ class VolumeKeyHandler(
                 pendingEventInfoHolder = PendingEventInfoHolder(PendingEventInfo(event, isPrimary))
             }
             logger(stateManager.toString())
+            vibrate()
         } else {
             logger("Event has no secondary, executing now")
-            executeEvent(event, isPrimary)
+            if (executeEvent(event, isPrimary)) vibrate()
         }
     }
 
+    private fun vibrate() = context.getVibrator().triggerVibration(prefs)
+
     @Synchronized
-    private fun executeEvent(event: MediaEvent, isPrimary: Boolean) {
+    private fun executeEvent(event: MediaEvent, isPrimary: Boolean): Boolean {
         val controller = mediaSessionManager.getActiveMediaController(prefs)
         if (controller == null) {
             logger("No active controller, skipping event")
-            return
+            return false
         }
         val executionContext = ExecutionContext(
             controller = controller,
@@ -252,7 +254,9 @@ class VolumeKeyHandler(
 //                }
 //            }
             abortAll()
+            return true
         }
+        return false
     }
 
     private fun abortSkip() {
