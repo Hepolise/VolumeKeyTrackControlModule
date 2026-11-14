@@ -9,7 +9,6 @@ import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Handler
-import android.os.PowerManager
 import android.os.UserHandle
 import android.view.Display
 import android.view.KeyEvent
@@ -20,11 +19,17 @@ import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getApps
 class MediaSessionManager(private val context: Context) {
     companion object {
         private const val USER_ALL = -1
+
+        // WindowManagerPolicyConstants.FLAG_INTERACTIVE (hidden)
+        // https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/core/java/android/view/WindowManagerPolicyConstants.java
+        private const val FLAG_INTERACTIVE = 0x20000000
+
+        private val SCREEN_OFF_STATES =
+            setOf(Display.STATE_OFF, Display.STATE_DOZE, Display.STATE_DOZE_SUSPEND)
     }
 
     lateinit var audioManager: AudioManager
         private set
-    private lateinit var powerManager: PowerManager
     private lateinit var displayManager: DisplayManager
     private lateinit var mediaSessionManager: MediaSessionManager
     private lateinit var sessionHelper: Any
@@ -36,7 +41,6 @@ class MediaSessionManager(private val context: Context) {
 
     private fun initManagers() {
         audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         mediaSessionManager =
             context.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
@@ -135,15 +139,25 @@ class MediaSessionManager(private val context: Context) {
         }
     }
 
-    fun isDisplayInteractive(): Boolean {
-        if (!powerManager.isInteractive) return false
-        if (displayManager.displays.size > 1) return true
-        val display = displayManager.displays[0]
-        return display.state !in setOf(
-            Display.STATE_OFF,
-            Display.STATE_DOZE,
-            Display.STATE_DOZE_SUSPEND
-        )
+    fun isDisplayInteractive(policyFlags: Int): Boolean {
+        if (policyFlags and FLAG_INTERACTIVE == 0) return false
+        val display = displayManager.getDisplay(Display.DEFAULT_DISPLAY) ?: return true
+        return display.state !in SCREEN_OFF_STATES
+    }
+
+    fun describeDisplayState(policyFlags: Int): String {
+        val display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
+        return "policyInteractive=${policyFlags and FLAG_INTERACTIVE != 0}, " +
+                "defaultDisplay=${display?.displayId}:${display?.state?.let(::displayStateName)}, " +
+                "displays=${displayManager.displays.joinToString { "${it.displayId}:${displayStateName(it.state)}" }}"
+    }
+
+    private fun displayStateName(state: Int) = when (state) {
+        Display.STATE_OFF -> "OFF"
+        Display.STATE_ON -> "ON"
+        Display.STATE_DOZE -> "DOZE"
+        Display.STATE_DOZE_SUSPEND -> "DOZE_SUSPEND"
+        else -> state.toString()
     }
 
     fun adjustStreamVolume(keyCode: Int, handler: Handler, logger: (String) -> Unit) {

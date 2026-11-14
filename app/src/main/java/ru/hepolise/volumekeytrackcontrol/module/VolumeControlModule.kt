@@ -107,15 +107,16 @@ class VolumeControlModule : XposedModule() {
         return XposedInterface.Hooker { chain ->
             try {
                 val event = chain.args[0] as KeyEvent
+                val policyFlags = chain.args[1] as Int
                 val volumeKeyHandler = chain.getRuntime(chain.getContext()).volumeKeyHandler
 
                 volumeKeyHandler.refreshControllers()
-                if (volumeKeyHandler.shouldIntercept(event)) {
+                if (volumeKeyHandler.shouldIntercept(event, policyFlags)) {
                     log("Intercepting key event: ${event.keyCode}")
                     volumeKeyHandler.handleKeyEvent(event)
                     return@Hooker null
                 } else {
-                    volumeKeyHandler.logInterceptDecision(event)
+                    volumeKeyHandler.logInterceptDecision(event, policyFlags)
                 }
             } catch (e: Throwable) {
                 log("Error handling key event: ${e.message}")
