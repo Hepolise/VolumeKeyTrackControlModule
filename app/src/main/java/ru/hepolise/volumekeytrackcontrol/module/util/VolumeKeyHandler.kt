@@ -26,10 +26,6 @@ class VolumeKeyHandler(
 ) {
     private val pendingRunnables = mutableMapOf<MediaEvent, Runnable>()
 
-    fun refreshControllers() {
-        mediaSessionManager.refreshControllers()
-    }
-
     private fun logDecision(
         title: String,
         keyCode: Int,
@@ -92,6 +88,7 @@ class VolumeKeyHandler(
         val isUpPressed = stateManager.isUpPressed
         val hasPendingEvent = stateManager.pendingEventInfo != null
 
+        mediaSessionManager.refreshControllers()
         val controller = mediaSessionManager.getActiveMediaController(prefs)
 
         logDecision(

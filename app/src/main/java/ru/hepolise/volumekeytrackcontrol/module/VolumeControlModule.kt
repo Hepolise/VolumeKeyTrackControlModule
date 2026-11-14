@@ -105,12 +105,13 @@ class VolumeControlModule : XposedModule() {
 
     private fun createInterceptHooker(): XposedInterface.Hooker {
         return XposedInterface.Hooker { chain ->
+            val event = chain.args[0] as? KeyEvent
+            if (event == null || !event.isVolumeKey()) return@Hooker chain.proceed()
+
             try {
-                val event = chain.args[0] as KeyEvent
                 val policyFlags = chain.args[1] as Int
                 val volumeKeyHandler = chain.getRuntime(chain.getContext()).volumeKeyHandler
 
-                volumeKeyHandler.refreshControllers()
                 if (volumeKeyHandler.shouldIntercept(event, policyFlags)) {
                     log("Intercepting key event: ${event.keyCode}")
                     volumeKeyHandler.handleKeyEvent(event)
@@ -159,3 +160,6 @@ class VolumeControlModule : XposedModule() {
         }
     }
 }
+
+private fun KeyEvent.isVolumeKey() =
+    keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
