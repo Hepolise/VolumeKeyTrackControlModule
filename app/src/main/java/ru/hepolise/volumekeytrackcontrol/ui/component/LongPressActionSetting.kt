@@ -39,11 +39,13 @@ import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.IS_ADD_SECONDARY_ACTION
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_ACTION_TYPE
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.REWIND_DURATION
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.SECONDARY_ACTION_DELAY
 
 data class RewindSettingData(
     val rewindActionType: RewindActionType,
     val rewindDuration: Int,
-    val isAddSecondaryAction: Boolean
+    val isAddSecondaryAction: Boolean,
+    val secondaryActionDelay: Int
 )
 
 @Composable
@@ -56,6 +58,7 @@ fun LongPressActionSetting(
     val rewindDuration = data.rewindDuration
 
     var showRewindDurationDialog by remember { mutableStateOf(false) }
+    var showSecondaryActionDelayDialog by remember { mutableStateOf(false) }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         SingleChoiceSegmentedButtonRow {
@@ -151,6 +154,64 @@ fun LongPressActionSetting(
                 }
             }
         }
+    }
+
+    Box {
+        AnimatedVisibility(
+            visible = data.isAddSecondaryAction,
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                PrefsSlider(
+                    value = data.secondaryActionDelay,
+                    onValueChange = {
+                        onValueChange(data.copy(secondaryActionDelay = it))
+                    },
+                    valueRange = 100f..2000f,
+                    prefKey = SECONDARY_ACTION_DELAY,
+                    sharedPreferences = sharedPreferences
+                )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(
+                            R.string.secondary_action_delay,
+                            data.secondaryActionDelay
+                        ),
+                        modifier = Modifier.clickable { showSecondaryActionDelayDialog = true }
+                    )
+                    IconButton(
+                        onClick = {
+                            showSecondaryActionDelayDialog = true
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.edit_secondary_action_delay)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showSecondaryActionDelayDialog) {
+        NumberAlertDialog(
+            title = stringResource(R.string.secondary_action_delay_dialog_title),
+            defaultValue = data.secondaryActionDelay,
+            minValue = 100,
+            maxValue = 2000,
+            onDismissRequest = { showSecondaryActionDelayDialog = false },
+            onConfirm = {
+                onValueChange(data.copy(secondaryActionDelay = it))
+                sharedPreferences.edit { putInt(SECONDARY_ACTION_DELAY, it) }
+                showSecondaryActionDelayDialog = false
+            }
+        )
     }
 
     if (showRewindDurationDialog) {

@@ -57,6 +57,9 @@
     <string name="rewind_duration_dialog_title">設定倒轉時長</string>
     <string name="edit_rewind_duration">編輯倒轉時長</string>
     <string name="add_secondary_action">新增次要動作</string>
+    <string name="secondary_action_delay">次要動作延遲：%d毫秒</string>
+    <string name="secondary_action_delay_dialog_title">次要動作延遲</string>
+    <string name="edit_secondary_action_delay">編輯次要動作延遲</string>
 
     <string name="settings_reset">重設設定</string>
     <string name="settings_reset_message">確定要重設設定嗎？</string>

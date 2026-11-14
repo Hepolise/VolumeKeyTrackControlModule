@@ -60,6 +60,9 @@
     <string name="rewind_duration_dialog_title">Set rewind duration</string>
     <string name="edit_rewind_duration">Edit rewind duration</string>
     <string name="add_secondary_action">Add secondary action</string>
+    <string name="secondary_action_delay">Secondary action delay: %dms</string>
+    <string name="secondary_action_delay_dialog_title">Secondary Action Delay</string>
+    <string name="edit_secondary_action_delay">Edit secondary action delay</string>
 
     <string name="settings_reset">Reset settings</string>
     <string name="settings_reset_message">Are you sure you want to reset settings?</string>
