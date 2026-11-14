@@ -11,6 +11,7 @@ import ru.hepolise.volumekeytrackcontrol.module.MediaEvent
 import ru.hepolise.volumekeytrackcontrol.util.RewindActionType
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getLongPressDuration
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getRewindActionType
+import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.getSecondaryActionDelay
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isAddSecondaryAction
 import ru.hepolise.volumekeytrackcontrol.util.SharedPreferencesUtil.isSwapButtons
 import ru.hepolise.volumekeytrackcontrol.util.VibratorUtil.getVibrator
@@ -26,14 +27,11 @@ class VolumeKeyHandler(
 ) {
     private val pendingRunnables = mutableMapOf<MediaEvent, Runnable>()
 
-    fun refreshControllers() {
-        mediaSessionManager.refreshControllers()
-    }
-
     private fun logDecision(
         title: String,
         keyCode: Int,
         displayInteractive: Boolean,
+        displayState: String,
         audioMode: Int,
         isDownPressed: Boolean,
         isUpPressed: Boolean,
@@ -43,7 +41,7 @@ class VolumeKeyHandler(
         logger("======== $title ========")
         logger("audioManager mode: $audioMode, required: ${AudioManager.MODE_NORMAL}")
         logger("keyCode: $keyCode, required: ${KeyEvent.KEYCODE_VOLUME_DOWN} or ${KeyEvent.KEYCODE_VOLUME_UP}")
-        logger("displayInteractive: $displayInteractive, required: false")
+        logger("displayInteractive: $displayInteractive, required: false ($displayState)")
         logger("isDownPressed: $isDownPressed")
         logger("isUpPressed: $isUpPressed")
         logger("hasPendingEvent: $hasPendingEvent")
@@ -52,11 +50,11 @@ class VolumeKeyHandler(
         logger("=========================================")
     }
 
-    fun logInterceptDecision(event: KeyEvent) {
+    fun logInterceptDecision(event: KeyEvent, policyFlags: Int) {
         val keyCode = event.keyCode
         if (keyCode != KeyEvent.KEYCODE_VOLUME_DOWN && keyCode != KeyEvent.KEYCODE_VOLUME_UP) return
 
-        val displayInteractive = mediaSessionManager.isDisplayInteractive()
+        val displayInteractive = mediaSessionManager.isDisplayInteractive(policyFlags)
         val audioMode = mediaSessionManager.audioManager.mode
         val isDownPressed = stateManager.isDownPressed
         val isUpPressed = stateManager.isUpPressed
@@ -67,6 +65,7 @@ class VolumeKeyHandler(
             title = "LOG INTERCEPT DECISION",
             keyCode = keyCode,
             displayInteractive = displayInteractive,
+            displayState = mediaSessionManager.describeDisplayState(policyFlags),
             audioMode = audioMode,
             isDownPressed = isDownPressed,
             isUpPressed = isUpPressed,
@@ -75,12 +74,12 @@ class VolumeKeyHandler(
         )
     }
 
-    fun shouldIntercept(event: KeyEvent): Boolean {
+    fun shouldIntercept(event: KeyEvent, policyFlags: Int): Boolean {
         val keyCode = event.keyCode
         if (keyCode != KeyEvent.KEYCODE_VOLUME_DOWN && keyCode != KeyEvent.KEYCODE_VOLUME_UP) return false
         if (event.flags and KeyEvent.FLAG_FROM_SYSTEM == 0) return false
 
-        val displayInteractive = mediaSessionManager.isDisplayInteractive()
+        val displayInteractive = mediaSessionManager.isDisplayInteractive(policyFlags)
         if (displayInteractive) return false
 
         val audioMode = mediaSessionManager.audioManager.mode
@@ -90,12 +89,14 @@ class VolumeKeyHandler(
         val isUpPressed = stateManager.isUpPressed
         val hasPendingEvent = stateManager.pendingEventInfo != null
 
+        mediaSessionManager.refreshControllers()
         val controller = mediaSessionManager.getActiveMediaController(prefs)
 
         logDecision(
             title = "NEED HOOK CHECK",
             keyCode = keyCode,
             displayInteractive = false,
+            displayState = mediaSessionManager.describeDisplayState(policyFlags),
             audioMode = audioMode,
             isDownPressed = isDownPressed,
             isUpPressed = isUpPressed,
@@ -151,7 +152,12 @@ class VolumeKeyHandler(
             scheduleEvent(primary, isPrimary = hasSecondary, hasSecondary = hasSecondary)
             getSecondaryEvent(primary)?.let { secondary ->
                 logger("Scheduling secondary event: ${secondary::class.simpleName} with delay")
-                scheduleEvent(secondary, isPrimary = false, hasSecondary = false, multiplier = 1.4)
+                scheduleEvent(
+                    secondary,
+                    isPrimary = false,
+                    hasSecondary = false,
+                    delay = (prefs.getLongPressDuration() + prefs.getSecondaryActionDelay()).toLong()
+                )
             }
         }
         logger("Creating delayed play pause")
@@ -166,7 +172,7 @@ class VolumeKeyHandler(
         logger("isMusicActive: $isMusicActive")
         if (!stateManager.isLongPress && isMusicActive) {
             logger("Adjusting stream volume")
-            mediaSessionManager.adjustStreamVolume(event.keyCode, handler)
+            mediaSessionManager.adjustStreamVolume(event.keyCode, handler, logger)
         }
     }
 
@@ -198,21 +204,16 @@ class VolumeKeyHandler(
         event: MediaEvent,
         isPrimary: Boolean,
         hasSecondary: Boolean,
-        multiplier: Double = 0.0
+        delay: Long = prefs.getLongPressDuration().toLong()
     ) {
-        val delay = (prefs.getLongPressDuration() + multiplier * prefs.getLongPressDuration()
-            .toDouble()).toLong()
-        val runnable = Runnable {
+        pendingRunnables[event] = handler.postSafely(delay, logger) {
             onDelayedEvent(event, isPrimary, hasSecondary)
         }
-        pendingRunnables[event] = runnable
-        handler.postDelayed(runnable, delay)
         logger("Scheduled event ${event::class.simpleName} (isPrimary=$isPrimary, hasSecondary=$hasSecondary) with delay $delay ms")
     }
 
     private fun onDelayedEvent(event: MediaEvent, isPrimary: Boolean, hasSecondary: Boolean) {
         logger("Delayed event triggered: ${event::class.simpleName}")
-        context.getVibrator().triggerVibration(prefs)
         stateManager.update { isLongPress = true }
 
         if (hasSecondary) {
@@ -221,18 +222,21 @@ class VolumeKeyHandler(
                 pendingEventInfoHolder = PendingEventInfoHolder(PendingEventInfo(event, isPrimary))
             }
             logger(stateManager.toString())
+            vibrate()
         } else {
             logger("Event has no secondary, executing now")
-            executeEvent(event, isPrimary)
+            if (executeEvent(event, isPrimary)) vibrate()
         }
     }
 
+    private fun vibrate() = context.getVibrator().triggerVibration(prefs)
+
     @Synchronized
-    private fun executeEvent(event: MediaEvent, isPrimary: Boolean) {
+    private fun executeEvent(event: MediaEvent, isPrimary: Boolean): Boolean {
         val controller = mediaSessionManager.getActiveMediaController(prefs)
         if (controller == null) {
             logger("No active controller, skipping event")
-            return
+            return false
         }
         val executionContext = ExecutionContext(
             controller = controller,
@@ -254,12 +258,14 @@ class VolumeKeyHandler(
 //                }
 //            }
             abortAll()
+            return true
         }
+        return false
     }
 
     private fun abortSkip() {
         logger("Aborting skip")
-        abortEvents(MediaEvent.Prev, MediaEvent.Next)
+        abortEvents(*pendingRunnables.keys.filter { it != MediaEvent.PlayPause }.toTypedArray())
     }
 
     private fun abortAll() {

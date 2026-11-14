@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.view.ViewConfiguration
 import io.github.libxposed.service.XposedService
+import kotlin.math.roundToInt
 
 object SharedPreferencesUtil {
     const val SETTINGS_PREFS = "settings_prefs"
@@ -19,6 +20,7 @@ object SharedPreferencesUtil {
     const val REWIND_DURATION = "rewindDuration"
     const val IS_SWAP_BUTTONS = "isSwapButtons"
     const val IS_ADD_SECONDARY_ACTION = "isAddSecondaryAction"
+    const val SECONDARY_ACTION_DELAY = "secondaryActionDelay"
     const val APP_FILTER_TYPE = "appFilterType"
     const val WHITE_LIST_APPS = "whiteListApps"
     const val BLACK_LIST_APPS = "blackListApps"
@@ -34,13 +36,15 @@ object SharedPreferencesUtil {
     const val REWIND_DURATION_DEFAULT_VALUE = 5
     const val IS_SWAP_BUTTONS_DEFAULT_VALUE = false
     const val IS_ADD_SECONDARY_ACTION_DEFAULT_VALUE = false
+    const val SECONDARY_ACTION_DELAY_DEFAULT_MULTIPLIER = 1.4
     val APP_FILTER_TYPE_DEFAULT_VALUE = AppFilterType.DISABLED.key
 
     const val LAUNCHED_COUNT_DEFAULT_VALUE = -1
 
     fun SharedPreferences?.getVibrationType(): VibrationType {
         val defaultValue = EFFECT_DEFAULT_VALUE
-        return VibrationType.fromKey(this?.getString(EFFECT, defaultValue) ?: defaultValue)
+        val key = this?.getString(EFFECT, defaultValue) ?: defaultValue
+        return VibrationType.values.find { it.key == key } ?: VibrationType.fromKey(defaultValue)
     }
 
     fun SharedPreferences?.getVibrationLength(): Int {
@@ -59,10 +63,8 @@ object SharedPreferencesUtil {
     }
 
     fun SharedPreferences?.getRewindActionType(): RewindActionType {
-        val defaultValue = REWIND_ACTION_TYPE_DEFAULT_VALUE.name
-        return RewindActionType.valueOf(
-            this?.getString(REWIND_ACTION_TYPE, defaultValue) ?: defaultValue
-        )
+        val name = this?.getString(REWIND_ACTION_TYPE, null)
+        return RewindActionType.entries.find { it.name == name } ?: REWIND_ACTION_TYPE_DEFAULT_VALUE
     }
 
     fun SharedPreferences?.getRewindDuration(): Int {
@@ -73,6 +75,14 @@ object SharedPreferencesUtil {
     fun SharedPreferences?.isAddSecondaryAction(): Boolean {
         val defaultValue = IS_ADD_SECONDARY_ACTION_DEFAULT_VALUE
         return this?.getBoolean(IS_ADD_SECONDARY_ACTION, defaultValue) ?: defaultValue
+    }
+
+    fun secondaryActionDelayDefault(longPressDuration: Int): Int =
+        (longPressDuration * SECONDARY_ACTION_DELAY_DEFAULT_MULTIPLIER).roundToInt()
+
+    fun SharedPreferences?.getSecondaryActionDelay(): Int {
+        val defaultValue = secondaryActionDelayDefault(getLongPressDuration())
+        return this?.getInt(SECONDARY_ACTION_DELAY, defaultValue) ?: defaultValue
     }
 
     fun SharedPreferences?.isSwapButtons(): Boolean {

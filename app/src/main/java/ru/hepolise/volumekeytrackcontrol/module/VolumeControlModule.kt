@@ -2,6 +2,7 @@ package ru.hepolise.volumekeytrackcontrol.module
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.util.Log
 import android.view.KeyEvent
@@ -47,6 +48,11 @@ class VolumeControlModule : XposedModule() {
 
     override fun onHotReloading(param: XposedModuleInterface.HotReloadingParam): Boolean {
         log(Log.INFO, TAG, "onHotReloading")
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // LSPosed's loader uses Stream.toList() (API 34+): reload fails after the old generation is retired (#301)
+            log("Refusing hot reload on SDK ${Build.VERSION.SDK_INT} (< 34)")
+            return false
+        }
         return interceptHookHandle != null
     }
 
@@ -91,7 +97,9 @@ class VolumeControlModule : XposedModule() {
                 Int::class.javaPrimitiveType
             )
 
-            val handle = hook(method).intercept(createInterceptHooker())
+            val handle = hook(method)
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(createInterceptHooker())
             log("Hooked interceptKeyBeforeQueueing")
             handle
         } catch (t: Throwable) {
@@ -103,28 +111,19 @@ class VolumeControlModule : XposedModule() {
 
     private fun createInterceptHooker(): XposedInterface.Hooker {
         return XposedInterface.Hooker { chain ->
-            val event = chain.args[0] as KeyEvent
-
-            val context = try {
-                chain.getContext()
-            } catch (e: Throwable) {
-                log("Failed to get context: ${e.message}")
-                log(e.stackTraceToString())
-                throw e
-            }
-
-            val runtime = chain.getRuntime(context)
+            val event = chain.args[0] as? KeyEvent
+            if (event == null || !event.isVolumeKey()) return@Hooker chain.proceed()
 
             try {
-                val volumeKeyHandler = runtime.volumeKeyHandler
+                val policyFlags = chain.args[1] as Int
+                val volumeKeyHandler = chain.getRuntime(chain.getContext()).volumeKeyHandler
 
-                volumeKeyHandler.refreshControllers()
-                if (volumeKeyHandler.shouldIntercept(event)) {
+                if (volumeKeyHandler.shouldIntercept(event, policyFlags)) {
                     log("Intercepting key event: ${event.keyCode}")
                     volumeKeyHandler.handleKeyEvent(event)
                     return@Hooker null
                 } else {
-                    volumeKeyHandler.logInterceptDecision(event)
+                    volumeKeyHandler.logInterceptDecision(event, policyFlags)
                 }
             } catch (e: Throwable) {
                 log("Error handling key event: ${e.message}")
@@ -146,13 +145,7 @@ class VolumeControlModule : XposedModule() {
 
         val mediaSessionManager = MediaSessionManager(context)
 
-        val handler = try {
-            getHandler()
-        } catch (e: Throwable) {
-            log("Failed to get handler: ${e.message}")
-            log(e.stackTraceToString())
-            throw e
-        }
+        val handler = getHandler()
 
         val volumeKeyHandler = VolumeKeyHandler(
             context = context,
@@ -173,3 +166,6 @@ class VolumeControlModule : XposedModule() {
         }
     }
 }
+
+private fun KeyEvent.isVolumeKey() =
+    keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN

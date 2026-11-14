@@ -26,7 +26,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import io.github.libxposed.service.HotReloadResult
 import io.github.libxposed.service.XposedService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,8 +41,8 @@ class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
     private val _xposedService = MutableStateFlow<XposedService?>(null)
     private val xposedService = _xposedService.asStateFlow()
 
-    private val _hotReloadResultStatus = MutableStateFlow<HotReloadResult.Status?>(null)
-    private val hotReloadResultStatus = _hotReloadResultStatus.asStateFlow()
+    private val _isModuleRunning = MutableStateFlow<Boolean?>(null)
+    private val isModuleRunning = _isModuleRunning.asStateFlow()
 
     private val _moduleScope = MutableStateFlow<List<String>?>(null)
     private val moduleScope = _moduleScope.asStateFlow()
@@ -72,28 +71,28 @@ class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
 
         setContent {
             val xposed by xposedService.collectAsState()
-            val result by hotReloadResultStatus.collectAsState()
+            val running by isModuleRunning.collectAsState()
             val scope by moduleScope.collectAsState()
             val prefs = xposed?.getSettingsSharedPreferences()
 
             fun computeIsHooked() = xposed != null
                     && prefs != null
-                    && result != null && result != HotReloadResult.Status.FAILED
+                    && running == true
                     && scope.orEmpty().contains(MODULE_SCOPE)
 
-            val isHooked = remember(result, xposed, prefs, scope) {
+            val isHooked = remember(running, xposed, prefs, scope) {
                 computeIsHooked()
             }
 
             CompositionLocalProvider(
                 LocalXposedService provides xposed,
-                LocalHotReloadResult provides result,
+                LocalModuleRunning provides running,
                 LocalModuleScope provides scope
             ) {
                 MaterialTheme(colorScheme = dynamicColorScheme(context = this)) {
                     AppNavigation(isHooked) {
                         xposed.updateModuleScope()
-                        xposed.updateHotReloadResult()
+                        xposed.updateModuleRunning()
                     }
                 }
             }
@@ -114,29 +113,14 @@ class SettingsActivity : ComponentActivity(), App.ServiceStateListener {
     override fun onServiceStateChanged(service: XposedService?) {
         _xposedService.value = service
         service.updateModuleScope()
-        service.updateHotReloadResult()
+        service.updateModuleRunning()
     }
 
-    private fun XposedService?.updateHotReloadResult() {
-        fun fallback() {
-            _hotReloadResultStatus.value = HotReloadResult.Status.FAILED
-        }
-
-        val service = this ?: run {
-            fallback()
-            return
-        }
-
-        if (!service.scope.contains(MODULE_SCOPE)) {
-            fallback()
-            return
-        }
-
-        service.runningTargets.takeIf { it.isNotEmpty() }?.forEach { target ->
-            service.hotReloadModule(target, null) { _, result ->
-                _hotReloadResultStatus.value = result.status
-            }
-        } ?: fallback()
+    private fun XposedService?.updateModuleRunning() {
+        val service = this
+        _isModuleRunning.value = service != null
+                && service.scope.contains(MODULE_SCOPE)
+                && runCatching { service.runningTargets.isNotEmpty() }.getOrDefault(false)
     }
 
     private fun XposedService?.updateModuleScope() {

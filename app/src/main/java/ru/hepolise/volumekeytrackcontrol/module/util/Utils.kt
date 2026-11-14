@@ -27,3 +27,16 @@ fun Any.getPrivateField(fieldName: String): Any? {
 }
 
 fun String.toClass(classLoader: ClassLoader) = Class.forName(this, true, classLoader)
+
+fun Handler.postSafely(delayMillis: Long, logger: (String) -> Unit, block: () -> Unit): Runnable {
+    val runnable = Runnable {
+        try {
+            block()
+        } catch (t: Throwable) {
+            logger("Error in delayed task: ${t.message}")
+            logger(t.stackTraceToString())
+        }
+    }
+    postDelayed(runnable, delayMillis)
+    return runnable
+}
