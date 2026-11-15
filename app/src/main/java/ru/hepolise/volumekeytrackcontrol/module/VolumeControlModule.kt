@@ -2,6 +2,7 @@ package ru.hepolise.volumekeytrackcontrol.module
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.util.Log
 import android.view.KeyEvent
@@ -47,6 +48,11 @@ class VolumeControlModule : XposedModule() {
 
     override fun onHotReloading(param: XposedModuleInterface.HotReloadingParam): Boolean {
         log(Log.INFO, TAG, "onHotReloading")
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // LSPosed's loader uses Stream.toList() (API 34+): reload fails after the old generation is retired (#301)
+            log("Refusing hot reload on SDK ${Build.VERSION.SDK_INT} (< 34)")
+            return false
+        }
         return interceptHookHandle != null
     }
 

@@ -79,9 +79,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.navigation.NavController
-import io.github.libxposed.service.HotReloadResult
 import ru.hepolise.volumekeytrackcontrol.R
-import ru.hepolise.volumekeytrackcontrol.ui.LocalHotReloadResult
+import ru.hepolise.volumekeytrackcontrol.ui.LocalModuleRunning
 import ru.hepolise.volumekeytrackcontrol.ui.LocalXposedService
 import ru.hepolise.volumekeytrackcontrol.ui.component.AppFilterSetting
 import ru.hepolise.volumekeytrackcontrol.ui.component.LongPressActionSetting
@@ -127,7 +126,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val xposedService = LocalXposedService.current
-    val hotReloadResult = LocalHotReloadResult.current
+    val isModuleRunning = LocalModuleRunning.current
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -146,8 +145,7 @@ fun SettingsScreen(
     var appFilterType by remember { mutableStateOf(settingsPrefs.getAppFilterType()) }
     var showResetSettingsDialog by remember { mutableStateOf(false) }
 
-    val isLoading =
-        hotReloadResult == null || hotReloadResult == HotReloadResult.Status.IN_PROGRESS
+    val isLoading = isModuleRunning == null
 
     var launchedCount by remember { mutableIntStateOf(statusPrefs.getLaunchedCount()) }
 
