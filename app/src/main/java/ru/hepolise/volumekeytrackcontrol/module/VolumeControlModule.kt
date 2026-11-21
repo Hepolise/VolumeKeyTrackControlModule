@@ -97,7 +97,9 @@ class VolumeControlModule : XposedModule() {
                 Int::class.javaPrimitiveType
             )
 
-            val handle = hook(method).intercept(createInterceptHooker())
+            val handle = hook(method)
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(createInterceptHooker())
             log("Hooked interceptKeyBeforeQueueing")
             handle
         } catch (t: Throwable) {
@@ -109,20 +111,9 @@ class VolumeControlModule : XposedModule() {
 
     private fun createInterceptHooker(): XposedInterface.Hooker {
         return XposedInterface.Hooker { chain ->
-            val event = chain.args[0] as KeyEvent
-
-            val context = try {
-                chain.getContext()
-            } catch (e: Throwable) {
-                log("Failed to get context: ${e.message}")
-                log(e.stackTraceToString())
-                throw e
-            }
-
-            val runtime = chain.getRuntime(context)
-
             try {
-                val volumeKeyHandler = runtime.volumeKeyHandler
+                val event = chain.args[0] as KeyEvent
+                val volumeKeyHandler = chain.getRuntime(chain.getContext()).volumeKeyHandler
 
                 volumeKeyHandler.refreshControllers()
                 if (volumeKeyHandler.shouldIntercept(event)) {
@@ -152,13 +143,7 @@ class VolumeControlModule : XposedModule() {
 
         val mediaSessionManager = MediaSessionManager(context)
 
-        val handler = try {
-            getHandler()
-        } catch (e: Throwable) {
-            log("Failed to get handler: ${e.message}")
-            log(e.stackTraceToString())
-            throw e
-        }
+        val handler = getHandler()
 
         val volumeKeyHandler = VolumeKeyHandler(
             context = context,
